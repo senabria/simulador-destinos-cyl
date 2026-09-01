@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2026 Simulador de destinos CyL — autores del proyecto
+Copyright (c) 2026 Simulador de destinos CyL — Xesús Andrés
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,7 @@ SOFTWARE.
 ---------------------------------------------------------------------------
 
 AVISO ADICIONAL: esta herramienta NO es oficial y no está afiliada a la
-Junta de Castilla y León. El repositorio no contiene datos personales: los
+Junta de C. y León. El repositorio no contiene datos personales: los
 ficheros de datos reales (Aprobados.csv, Relación posibles puestos.csv,
 2025.csv, datos.json, simulador.html generado con ellos) están excluidos
 mediante .gitignore y no deben subirse nunca. Las adjudicaciones reales
