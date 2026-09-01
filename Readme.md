@@ -1,6 +1,6 @@
 # 🎯 Simulador de destinos — CyL 2026
 
-Simulación de Monte Carlo **multi-criterio** de la adjudicación de los 362 puestos de un concurso de traslados de la administración de Castilla y León, construida sobre tres fuentes de datos: orden de mérito de los aprobados (turno y provincia de examen), catálogo de ~1.600 puestos con Complemento Específico e histórico real de 380 plazas del concurso 2025.
+Simulación de Monte Carlo **multi-criterio** de la adjudicación de los 362 puestos de la oposición de auxiliar administrativo de C. y León, construida sobre tres fuentes de datos: orden de mérito de los aprobados (turno y provincia de examen), catálogo de ~1.600 puestos con Complemento Específico e histórico real de 380 plazas de 2025.
 
 El producto final es **`simulador.html`**: una web autocontenida, **sin dependencias y sin conexión**, que se abre con doble clic.
 
@@ -155,4 +155,4 @@ Ejecutadas sobre el dataset sintético (mismas distribuciones agregadas que los 
 - **Herramienta no oficial**, creada por y para opositores: sin afiliación con la Junta de Castilla y León, sin garantía de exactitud y sin valor probatorio. Las adjudicaciones reales dependen únicamente de las resoluciones oficiales publicadas en el [BOCyL](https://bocyl.jcyl.es).
 
 ---
-*Concurso de Traslados CyL 2026 · Simulación Monte Carlo multi-criterio.*
+*Oposición auxiliar CyL 2026 · Simulación Monte Carlo multi-criterio.*
