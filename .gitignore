@@ -1,0 +1,23 @@
+# ============================================================
+# DATOS REALES Y ARTEFACTOS QUE LOS EMBEBEN — NUNCA commitear
+# (los CSV sintéticos de datos_demo/ SÍ se versionan)
+# ============================================================
+/Aprobados.csv
+/2025.csv
+/Relación posibles puestos.csv
+/datos.json
+/simulador.html
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node / sistema
+node_modules/
+package-lock.json
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log

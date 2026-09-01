@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Simulador de destinos — CYL 2026</title>
+    <style>
+        :root {
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --ink: #0f172a;
+            --mut: #475569;
+            --acc: #0e7490;
+            --acc2: #0891b2;
+            --warn: #b45309;
+            --line: #e2e8f0;
+            --chart-ink: #0f172a;
+            --chart-mut: #475569;
+            --chart-grid: #e2e8f0;
+            --chart-axis: #64748b;
+            --chart-marker: #92400e;
+            --series-a: #0e7490;
+            --series-b: #d97706;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+        }
+
+        header {
+            background: linear-gradient(120deg, #0e7490, #155e75);
+            color: #fff;
+            padding: 22px 26px;
+        }
+
+        header h1 {
+            margin: 0 0 4px;
+            font-size: 1.45rem;
+        }
+
+        header p {
+            margin: 0;
+            opacity: .85;
+            font-size: .92rem;
+        }
+
+        main {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 18px;
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 16px 18px;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, .06);
+        }
+
+        .card h2 {
+            margin: 0 0 12px;
+            font-size: 1.02rem;
+            color: var(--acc);
+        }
+
+        .card.wide {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: .86rem;
+            color: var(--mut);
+        }
+
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            font-size: .95rem;
+            background: #fff;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--acc);
+        }
+
+        input[type="file"] {
+            font-size: .84rem;
+            padding: 6px 8px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: #f8fafc;
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .fld {
+            flex: 1;
+            min-width: 110px;
+        }
+
+        .srow {
+            display: grid;
+            grid-template-columns: 130px 1fr 46px;
+            gap: 10px;
+            align-items: center;
+            margin: 7px 0;
+        }
+
+        .srow .val {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            color: var(--mut);
+            font-size: .9rem;
+        }
+
+        .seatrow {
+            display: grid;
+            grid-template-columns: 1fr 84px;
+            gap: 8px;
+            align-items: center;
+            margin: 4px 0;
+        }
+
+        .seatrow label {
+            font-size: .88rem;
+        }
+
+        .hint {
+            font-size: .8rem;
+            color: var(--mut);
+            margin-top: 6px;
+            line-height: 1.45;
+        }
+
+        .ok,
+        .err,
+        .warn {
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: .84rem;
+            line-height: 1.5;
+        }
+
+        .ok {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .err {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .warn {
+            background: #fffbeb;
+            color: #92400e;
+            border: 1px solid #fde68a;
+            margin-top: 8px;
+        }
+
+        .badge {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        button {
+            background: var(--acc);
+            color: #fff;
+            border: 0;
+            border-radius: 9px;
+            padding: 9px 16px;
+            font-size: .92rem;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        button:hover:not(:disabled) {
+            background: var(--acc2);
+        }
+
+        button:disabled {
+            opacity: .5;
+            cursor: default;
+        }
+
+        button.sec {
+            background: #e2e8f0;
+            color: var(--ink);
+        }
+
+        button.sec:hover {
+            background: #cbd5e1;
+        }
+
+        button.big {
+            font-size: 1.05rem;
+            padding: 12px 26px;
+        }
+
+        #progWrap {
+            display: none;
+            margin-top: 10px;
+        }
+
+        #progBarBg {
+            background: #e2e8f0;
+            border-radius: 6px;
+            height: 12px;
+            overflow: hidden;
+        }
+
+        #progBar {
+            background: var(--acc);
+            height: 100%;
+            width: 0;
+            transition: width .15s;
+        }
+
+        #progText {
+            font-size: .82rem;
+            color: var(--mut);
+            margin-top: 4px;
+        }
+
+        .kpis {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            margin-bottom: 14px;
+        }
+
+        .kpi {
+            background: #f8fafc;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 12px 14px;
+        }
+
+        .kpi .t {
+            font-size: .78rem;
+            color: var(--mut);
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .kpi .v {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--acc);
+            margin-top: 2px;
+        }
+
+        .kpi .v.small {
+            font-size: 1rem;
+        }
+
+        canvas {
+            width: 100%;
+            display: block;
+        }
+
+        .chartbox {
+            margin: 14px 0 4px;
+        }
+
+        .chartbox h3 {
+            font-size: .9rem;
+            color: var(--mut);
+            margin: 0 0 6px;
+        }
+
+        table.cat {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: .84rem;
+            margin-top: 8px;
+        }
+
+        table.cat th,
+        table.cat td {
+            border-bottom: 1px solid var(--line);
+            padding: 4px 8px;
+            text-align: right;
+        }
+
+        table.cat th:first-child,
+        table.cat td:first-child {
+            text-align: left;
+        }
+
+        table.cat th {
+            color: var(--mut);
+            font-weight: 600;
+        }
+
+        table.cat tr.hl td {
+            background: #fffbeb;
+        }
+
+        table.cat tr.totrow td {
+            font-weight: 700;
+            background: #f8fafc;
+        }
+
+        table.out {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: .82rem;
+        }
+
+        table.out th,
+        table.out td {
+            border-bottom: 1px solid var(--line);
+            padding: 5px 8px;
+            text-align: left;
+        }
+
+        table.out th {
+            color: var(--mut);
+        }
+
+        .compare-table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: .88rem;
+            margin-top: 10px;
+        }
+
+        .compare-table th,
+        .compare-table td {
+            border: 1px solid var(--line);
+            padding: 8px 12px;
+            text-align: center;
+        }
+
+        .compare-table th:first-child,
+        .compare-table td:first-child {
+            text-align: left;
+            font-weight: 600;
+            background: #f8fafc;
+        }
+
+        .compare-table th {
+            background: #f1f5f9;
+            color: var(--acc);
+        }
+
+        .oculto {
+            display: none;
+        }
+
+        .asunciones li {
+            font-size: .84rem;
+            color: var(--mut);
+            margin: 5px 0;
+            line-height: 1.5;
+        }
+
+        footer {
+            text-align: center;
+            color: var(--mut);
+            font-size: .78rem;
+            padding: 10px 16px 26px;
+        }
+
+        .radio {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin: 8px 0;
+        }
+
+        .radio label {
+            font-size: .88rem;
+            color: var(--ink);
+        }
+
+        .radio .sub {
+            display: block;
+            font-size: .78rem;
+            color: var(--mut);
+        }
+
+        /* ---------------- modo oscuro ---------------- */
+        body.dark {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --ink: #f8fafc;
+            --mut: #94a3b8;
+            --acc: #38bdf8;
+            --acc2: #7dd3fc;
+            --warn: #fbbf24;
+            --line: #334155;
+            --chart-ink: #f8fafc;
+            --chart-mut: #94a3b8;
+            --chart-grid: #334155;
+            --chart-axis: #94a3b8;
+            --chart-marker: #fcd34d;
+            --series-a: #22d3ee;
+            --series-b: #fbbf24;
+            color-scheme: dark;
+        }
+
+        body.dark header {
+            background: linear-gradient(120deg, #155e75, #0c4a6e);
+        }
+
+        body.dark button {
+            color: #0c4a6e;
+        }
+
+        body.dark button.sec {
+            background: #334155;
+            color: var(--ink);
+        }
+
+        body.dark button.sec:hover {
+            background: #475569;
+        }
+
+        body.dark input[type="number"],
+        body.dark select {
+            background: #0f172a;
+            color: var(--ink);
+        }
+
+        body.dark input[type="file"] {
+            background: #0f172a;
+            color: var(--ink);
+        }
+
+        body.dark #progBarBg {
+            background: #334155;
+        }
+
+        body.dark .kpi {
+            background: #0f172a;
+        }
+
+        body.dark .ok {
+            background: #052e1b;
+            color: #6ee7b7;
+            border-color: #065f46;
+        }
+
+        body.dark .err {
+            background: #3f1416;
+            color: #fca5a5;
+            border-color: #7f1d1d;
+        }
+
+        body.dark .warn {
+            background: #33270a;
+            color: #fcd34d;
+            border-color: #92400e;
+        }
+
+        body.dark table.cat tr.hl td {
+            background: #33270a;
+        }
+
+        body.dark table.cat tr.totrow td {
+            background: #0f172a;
+        }
+
+        body.dark .compare-table th:first-child,
+        body.dark .compare-table td:first-child {
+            background: #0f172a;
+        }
+
+        body.dark .compare-table th {
+            background: #0f172a;
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                color: #000;
+            }
+
+            body.dark {
+                --card: #ffffff;
+                --ink: #000000;
+                --mut: #555555;
+                --line: #cbd5e1;
+                --acc: #0e7490;
+            }
+
+            header {
+                background: none;
+                color: #000;
+                border-bottom: 2px solid #0e7490;
+                padding: 10px 0;
+            }
+
+            header p {
+                color: #555;
+            }
+
+            main {
+                display: block;
+                padding: 0;
+            }
+
+            .card:not(#results):not(#compareSection) {
+                display: none !important;
+            }
+
+            #results,
+            #compareSection {
+                box-shadow: none;
+                border: none;
+                page-break-inside: avoid;
+            }
+
+            button {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        /* Aplica el tema guardado antes del primer render para evitar destellos */
+        (function () {
+            try {
+                var t = localStorage.getItem('theme');
+                if (t === 'dark' || (!t && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.body.classList.add('dark');
+                }
+            } catch (e) { }
+        })();
+    </script>
+    <header>
+        <button id="btnTheme" title="Cambiar tema claro/oscuro"
+            style="float:right; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.45); color:#fff; padding:7px 12px;">🌙</button>
+        <h1>🎯 Simulador de destinos — CyL 2026</h1>
+        <p>Monte Carlo multi-criterio con los 362 aprobados reales y el catálogo de ~1600 puestos (Complemento
+            Específico E06–E02). Todo local y offline.</p>
+    </header>
+
+    <main>
+
+        <section class="card">
+            <h2>📋 Datos y catálogo</h2>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <div>
+                    <label style="display:block; margin-bottom:4px; font-weight:600;">Aprobados.csv</label>
+                    <input type="file" id="fileAprob" accept=".csv" style="width:100%;">
+                </div>
+                <div>
+                    <label style="display:block; margin-bottom:4px; font-weight:600;">Relación posibles
+                        puestos.csv</label>
+                    <input type="file" id="filePuestos" accept=".csv" style="width:100%;">
+                </div>
+            </div>
+            <div id="dataInfo" class="hint"></div>
+            <div id="catalogDiv"></div>
+        </section>
+
+        <section class="card">
+            <h2>🎯 Tu perfil</h2>
+            <div class="row">
+                <div class="fld"><label>Posición en el listado</label><input type="number" id="inPos" min="1" step="1"
+                        value="100"></div>
+                <div class="fld"><label>1ª Provincia preferida</label><select id="selProv"></select></div>
+            </div>
+            <div class="row" style="margin-top:10px">
+                <div class="fld"><label>2ª Provincia preferida</label><select id="selProv2"></select></div>
+                <div class="fld"><label>Nº de simulaciones</label><input type="number" id="inSims" min="100" max="50000"
+                        step="100" value="3000"></div>
+            </div>
+            <div class="row" style="margin-top:10px">
+                <div class="fld"><label>Semilla aleatoria</label><input type="number" id="inSeed" min="0" step="1"
+                        value="42"></div>
+            </div>
+            <div style="margin-top:10px">
+                <label><input type="checkbox" id="chkOtras"> <b>Aceptar otra provincia</b> solo si se agota mi 1ª
+                    preferencia</label>
+            </div>
+            <div id="ctxInfo" class="hint"></div>
+        </section>
+
+        <section class="card">
+            <h2>🪑 Plazas ofertadas por provincia</h2>
+            <div class="row" style="align-items:center; margin-bottom:8px">
+                <span class="badge" id="seatsBadge">🟢 362</span>
+                <span class="hint" style="margin:0">total: <b id="seatsTotal">362</b> plazas</span>
+            </div>
+            <div id="seatsGrid"></div>
+            <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px">
+                <button class="sec" id="preset2025" style="border-color:var(--acc); font-weight:600;">🏛️ Oferta 2025
+                    (380→362)</button>
+                <button class="sec" id="presetCat">Proporcional catálogo</button>
+                <button class="sec" id="presetApro">Proporcional aprobados</button>
+                <button class="sec" id="presetRPT">RPT original</button>
+            </div>
+            <div id="deficitWarn"></div>
+            <div class="hint">El reparto por provincia se usa para muestrear el subconjunto de puestos ofertados (1600 →
+                362) de forma estratificada.</div>
+        </section>
+
+        <section class="card">
+            <h2>⚖️ Pesos de los criterios (opositores)</h2>
+            <div class="srow"><label>Provincia</label><input type="range" id="w-0" min="0" max="100" step="1"
+                    value="40"><span class="val" id="v-0">40</span></div>
+            <div class="srow"><label>Salario (nivel E)</label><input type="range" id="w-1" min="0" max="100" step="1"
+                    value="25"><span class="val" id="v-1">25</span></div>
+            <div class="srow"><label>Capital vs comarca</label><input type="range" id="w-2" min="0" max="100" step="1"
+                    value="15"><span class="val" id="v-2">15</span></div>
+            <div class="srow"><label>Horario especial</label><input type="range" id="w-3" min="0" max="100" step="1"
+                    value="10"><span class="val" id="v-3">10</span></div>
+            <div class="srow"><label>Tipo de trabajo</label><input type="range" id="w-4" min="0" max="100" step="1"
+                    value="10"><span class="val" id="v-4">10</span></div>
+            <div class="hint" id="wNorm"></div>
+            <div class="row" style="margin-top:10px">
+                <button class="sec" id="pw-eq">Equilibrado</button>
+                <button class="sec" id="pw-prov">Solo provincia</button>
+                <button class="sec" id="pw-sal">Solo salario</button>
+                <button class="sec" id="pw-provsal">Prov. + salario</button>
+            </div>
+            <div class="srow" style="margin-top:12px"><label>Homogeneidad (Dirichlet)</label><input type="range"
+                    id="inConc" min="1" max="200" step="1" value="30"><span class="val" id="vConc">30</span></div>
+            <div class="srow"><label>Temperatura (softmax)</label><input type="range" id="inTemp" min="0" max="0.5"
+                    step="0.01" value="0.1"><span class="val" id="vTemp">0,10</span></div>
+            <div class="hint">Cada opositor simulado recibe pesos propios alrededor de estos valores (Dirichlet).
+                Temperatura 0 = elección determinista; mayor = más ruido.</div>
+        </section>
+
+        <section class="card">
+            <h2>💰 Utilidad de cada nivel</h2>
+            <div class="row">
+                <div class="fld"><label>E06</label><input type="number" id="u-e6" min="0" max="1" step="0.01" value="1">
+                </div>
+                <div class="fld"><label>E04</label><input type="number" id="u-e4" min="0" max="1" step="0.01"
+                        value="0.66"></div>
+                <div class="fld"><label>E03</label><input type="number" id="u-e3" min="0" max="1" step="0.01"
+                        value="0.33"></div>
+                <div class="fld"><label>E02</label><input type="number" id="u-e2" min="0" max="1" step="0.01" value="0">
+                </div>
+            </div>
+            <div class="row" style="margin-top:10px">
+                <div class="fld"><label>Capital</label><input type="number" id="u-cap" min="0" max="1" step="0.01"
+                        value="1"></div>
+                <div class="fld"><label>Comarca</label><input type="number" id="u-com" min="0" max="1" step="0.01"
+                        value="0.4"></div>
+            </div>
+            <div class="row" style="margin-top:10px">
+                <div class="fld"><label>Horario especial</label><input type="number" id="u-hor" min="-1" max="1"
+                        step="0.01" value="0.5"></div>
+            </div>
+            <div class="row" style="margin-top:10px">
+                <div class="fld"><label>Oficina interna</label><input type="number" id="u-int" min="0" max="1"
+                        step="0.01" value="1"></div>
+                <div class="fld"><label>Atención al público</label><input type="number" id="u-ate" min="0" max="1"
+                        step="0.01" value="0.5"></div>
+                <div class="fld"><label>Residencias</label><input type="number" id="u-res" min="0" max="1" step="0.01"
+                        value="0.2"></div>
+            </div>
+            <div class="srow" style="margin-top:10px">
+                <label>Preferencia SSCC</label>
+                <input type="range" id="u-sscc" min="0" max="1" step="0.05" value="0.5"><span class="val"
+                    id="vu-sscc">0,50</span>
+            </div>
+            <div class="hint">El «horario especial» (643000, típico de los E06 de registro) puede ser un bonus o un
+                castigo (valor negativo) según el opositor. Preferencia SSCC pondera puestos en Servicios Centrales
+                frente a Territoriales.</div>
+        </section>
+
+        <section class="card">
+            <h2>🧠 Comportamiento de los opositores</h2>
+            <div class="srow"><label>Fidelidad a su provincia</label><input type="range" id="inFid" min="0" max="1"
+                    step="0.01" value="0.9"><span class="val" id="vFid">90 %</span></div>
+            <div class="hint" id="fidNote"></div>
+            <div style="margin-top:8px">
+                <label><input type="checkbox" id="chkProx" checked> <b>Afinidad geográfica</b> (segunda opción
+                    condicionada por cercanía en km)</label>
+            </div>
+            <div class="srow" style="margin-top:12px"><label>Renuncias (antes de elegir)</label><input type="range"
+                    id="inRen" min="0" max="0.5" step="0.01" value="0.03"><span class="val" id="vRen">3 %</span></div>
+            <div class="fld" style="margin-top:10px">
+                <label>Tratamiento del Turno M (11 candidatos)</label>
+                <select id="selTurnoM">
+                    <option value="igual">Igual que el resto (por defecto)</option>
+                    <option value="soloE02">Solo eligen puestos E02 (reserva)</option>
+                    <option value="excluidos">Excluidos de la simulación</option>
+                </select>
+            </div>
+            <div class="hint">Quien renuncia no ocupa plaza (no hay segunda vuelta en el modelo). El nº 108 es Turno M
+                con Zamora: te precede.</div>
+        </section>
+
+        <section class="card">
+            <h2>🎲 Escenario del recorte 1600 → 362</h2>
+            <div class="radio"><input type="radio" name="esc" id="esc-2025" value="calibrado2025" checked>
+                <label for="esc-2025"><b>🏛️ Calibrado 2025 (Recomendado)</b> <span class="sub">Muestrea los puestos
+                        según las proporciones reales de niveles E de 2025 por provincia</span></label>
+            </div>
+            <div class="radio"><input type="radio" name="esc" id="esc-ale" value="aleatorio">
+                <label for="esc-ale">Aleatorio <span class="sub">muestreo uniforme dentro de cada
+                        provincia</span></label>
+            </div>
+            <div class="radio"><input type="radio" name="esc" id="esc-opt" value="optimista">
+                <label for="esc-opt">Optimista <span class="sub">se conservan primero los puestos mejor pagados (E06,
+                        E04…)</span></label>
+            </div>
+            <div class="radio"><input type="radio" name="esc" id="esc-pes" value="pesimista">
+                <label for="esc-pes">Pesimista <span class="sub">se conservan primero los E02</span></label>
+            </div>
+            <div class="hint">No sabemos qué 362 puestos se ofertarán: cada simulación extrae, por provincia, tantas
+                plazas como indiques en «Plazas ofertadas».</div>
+        </section>
+
+        <section class="card wide">
+            <h2>▶️ Ejecutar</h2>
+            <div class="row" style="align-items:center">
+                <button class="big" id="btnRun">🚀 Simular</button>
+                <button class="sec" id="btnDefaults">↺ Valores por defecto</button>
+            </div>
+            <div id="progWrap">
+                <div id="progBarBg">
+                    <div id="progBar"></div>
+                </div>
+                <div id="progText"></div>
+            </div>
+        </section>
+
+        <section class="card wide oculto" id="results">
+            <h2>📈 Resultados</h2>
+            <div class="kpis">
+                <div class="kpi">
+                    <div class="t">P(plaza en tu 1ª provincia)</div>
+                    <div class="v" id="kpiP">—</div>
+                </div>
+                <div class="kpi">
+                    <div class="t">IC 95 %</div>
+                    <div class="v small" id="kpiCI">—</div>
+                </div>
+                <div class="kpi">
+                    <div class="t">Plazas restantes al llegar a tu turno (media)</div>
+                    <div class="v" id="kpiRem">—</div>
+                </div>
+                <div class="kpi">
+                    <div class="t">Agotamiento de tu provincia</div>
+                    <div class="v small" id="kpiExh">—</div>
+                </div>
+                <div class="kpi">
+                    <div class="t">P(E ≥ 03 | plaza)</div>
+                    <div class="v" id="kpiE3">—</div>
+                </div>
+                <div class="kpi">
+                    <div class="t">SSCC vs Territorial</div>
+                    <div class="v small" id="kpiSSCC">—</div>
+                </div>
+            </div>
+            <div class="row" style="margin-bottom:14px; gap:8px;">
+                <button class="sec" id="btnExportPDF">📄 Imprimir / Guardar PDF</button>
+                <button class="sec" id="btnExportCSV">📥 Exportar CSV con resultados</button>
+            </div>
+            <div class="hint" id="curveAtUser"></div>
+            <div class="chartbox">
+                <h3>Nivel de Complemento Específico obtenido</h3><canvas id="chartE" style="height:220px"></canvas>
+            </div>
+            <div class="chartbox">
+                <h3>Ubicación del puesto obtenido</h3><canvas id="chartMun" style="height:200px"></canvas>
+            </div>
+            <div class="chartbox">
+                <h3>Curva de disponibilidad: P(queda alguna plaza de tu provincia en el turno X)</h3><canvas
+                    id="chartCurve" style="height:260px"></canvas>
+            </div>
+            <div class="chartbox">
+                <h3>Ejemplos de plazas obtenidas (simulaciones al azar)</h3>
+                <table class="out">
+                    <thead>
+                        <tr>
+                            <th>Nivel</th>
+                            <th>Tipo</th>
+                            <th>Municipio</th>
+                            <th>Destino</th>
+                        </tr>
+                    </thead>
+                    <tbody id="outcomesBody"></tbody>
+                </table>
+            </div>
+            <div class="hint" id="resSummary"></div>
+        </section>
+
+        <section class="card wide" id="compareSection">
+            <h2>⚖️ Comparador de escenarios y perfiles</h2>
+            <p class="hint">Guarda el resultado de una simulación para compararlo lado a lado con otra (por ejemplo:
+                turno 118 vs 140, Escenario 2025 vs Optimista, o fidelidad 80% vs 50%).</p>
+            <div class="row" style="margin-bottom:12px; gap:8px;">
+                <button class="sec" id="btnSaveA">💾 Guardar como Escenario A</button>
+                <button class="sec" id="btnSaveB">💾 Guardar como Escenario B</button>
+                <button class="sec" id="btnClearCompare">↺ Limpiar comparación</button>
+            </div>
+            <div id="compareTableWrap" style="overflow-x:auto;"></div>
+            <div class="chartbox" id="compareChartBox" style="display:none; margin-top:14px;">
+                <h3>Comparativa de curvas de disponibilidad por turno (Escenario A vs B)</h3>
+                <canvas id="chartCurveCompare" style="height:260px"></canvas>
+            </div>
+        </section>
+
+        <section class="card wide">
+            <h2>🌪️ Análisis de sensibilidad (tornado)</h2>
+            <div class="row" style="align-items:center">
+                <div class="fld" style="max-width:160px"><label>Simulaciones por factor</label><input type="number"
+                        id="inT" min="50" max="5000" step="50" value="400"></div>
+                <button id="btnTornado">Calcular sensibilidad</button>
+            </div>
+            <div id="tornadoWrap" class="oculto">
+                <div class="chartbox"><canvas id="chartTornado" style="height:360px"></canvas></div>
+                <div class="hint" id="tornadoNote"></div>
+            </div>
+        </section>
+
+        <section class="card wide">
+            <h2>📜 Asunciones del modelo</h2>
+            <ul class="asunciones">
+                <li>Orden de mérito, turno y provincia de examen reales de <b>Aprobados.csv</b> (362 aspirantes).</li>
+                <li>Cada opositor tiene pesos propios ~ Dirichlet(homogeneidad) sobre 5 criterios: provincia, salario
+                    (E06>E04>E03>E02), capital/comarca, horario especial (643000) y tipo de trabajo (interna / atención
+                    / residencias).</li>
+                <li>Con probabilidad «fidelidad» prefiere su provincia de examen; en caso contrario, la provincia se
+                    sortea según afinidad geográfica por cercanía física.</li>
+                <li>Elige entre las plazas libres por softmax con la temperatura indicada (0 = determinista). Sin el
+                    «fallback sesgado» del script original.</li>
+                <li>Renuncias: cada opositor (menos tú) renuncia antes de elegir con la probabilidad indicada.</li>
+                <li>Subconjunto 1600→362: muestreo estratificado por provincia según las plazas indicadas, con escenario
+                    calibrado con los datos de 2025, aleatorio, optimista o pesimista.</li>
+                <li>Tú nunca renuncias y eliges, entre las plazas de tu provincia (u otras si lo activas), la de mayor
+                    media de salario + municipio + horario + tipo de trabajo + SSCC.</li>
+                <li>IC 95 % de Wilson sobre la proporción de éxito; la curva de disponibilidad se mide antes de que
+                    elija cada turno.</li>
+                <li>Limitaciones: no hay segunda vuelta ni devolución de plazas, la promoción interna no se diferencia,
+                    y el horario especial se modela como un único valor de utilidad.</li>
+            </ul>
+        </section>
+
+    </main>
+    <footer>Generado por generar_web.py el __FECHA__ · sin dependencias externas · los datos van embebidos y pueden
+        actualizarse cargando los CSV.</footer>
+
+    <script>
+        var DATA = /*__DATA__*/{};
+    </script>
+    <!--NUCLEO-->
+    <!--CHARTS-->
+    <!--APP-->
+</body>
+
+</html>

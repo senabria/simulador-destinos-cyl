@@ -1,0 +1,65 @@
+name: CI y demo publica
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Permisos para desplegar la demo sintetica en GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Generar dataset sintetico y la web
+        run: |
+          python generar_datos_demo.py
+          python generar_web.py --demo
+
+      - name: Pruebas del motor (23)
+        run: node test_nucleo.js
+
+      - name: Pruebas headless de la interfaz (9)
+        run: node test_headless.js
+
+      - name: Verificacion estructural y rendimiento
+        run: node verificar_web.js
+
+      - name: Preparar sitio de Pages
+        run: |
+          mkdir -p site
+          cp simulador.html site/index.html
+
+      - name: Subir artefacto de Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Desplegar en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

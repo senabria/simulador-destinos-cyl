@@ -1,0 +1,12 @@
+# Dependencias Python — Simulador de destinos CyL 2026 (SimuOpo26)
+#
+# Instalación:  pip install -r requirements.txt
+#
+# Detalle por pieza:
+#   - generar_web.py  -> solo librería estándar (csv, json, math, re...), NO necesita nada de este archivo.
+#   - Monte Carlo.py  -> análisis Monte Carlo previo; necesita numpy y pandas (listados abajo).
+#   - simulador.html  -> web autocontenida, no requiere Python ni conexión.
+#   - test_nucleo.js / test_headless.js / verificar_web.js -> requieren Node.js (no Python).
+
+numpy>=1.24
+pandas>=2.0
