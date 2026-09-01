@@ -59,7 +59,7 @@ De cada aprobado el motor solo usa **orden de mérito, turno (L/M) y provincia d
 
 Los datos cargados **no salen de tu navegador**: la web es offline y no envía nada a ningún sitio.
 
-**Opción B — regenerar la web en local.** Coloca `Aprobados.csv`, `Relación posibles puestos.csv` y `2025.csv` en la raíz del proyecto y ejecuta `python generar_web.py`. Esos tres ficheros están excluidos por `.gitignore`: **nunca los subas al repositorio** ni commitees el `simulador.html` resultante.
+**Opción B — regenerar la web en local.** Coloca `Aprobados.csv`, `Relación posibles puestos.csv` y `2025.csv` en la raíz del proyecto y ejecuta `python generar_web.py`. Esos tres ficheros están excluidos por `.gitignore`.
 
 ### Dataset sintético de demo
 
