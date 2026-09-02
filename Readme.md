@@ -1,5 +1,7 @@
 # 🎯 Simulador de destinos — CyL 2026
 
+**[🚀 Acceder al Simulador Web (Clic aquí)](https://senabria.github.io/simulador-destinos-cyl/)**
+
 Simulación de Monte Carlo **multi-criterio** de la adjudicación de los 362 puestos de la oposición de auxiliar administrativo de C. y León, construida sobre tres fuentes de datos: orden de mérito de los aprobados (turno y provincia de examen), catálogo de ~1.600 puestos con Complemento Específico e histórico real de 380 plazas de 2025.
 
 El producto final es **`simulador.html`**: una web autocontenida, **sin dependencias y sin conexión**, que se abre con doble clic.
