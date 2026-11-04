@@ -753,7 +753,12 @@
                     id="chartCurve" style="height:260px"></canvas>
             </div>
             <div class="chartbox">
-                <h3>Plazas de tu provincia que se llevaron quienes te precedían (nivel E ≥ 03, ejemplos)</h3>
+                <h3>Disponibilidad estimada al llegar a tu turno (media de plazas libres por provincia y nivel, ordenado
+                    por cercanía)</h3>
+                <div id="remProvBody"></div>
+            </div>
+            <div class="chartbox">
+                <h3>Plazas libres al llegar a tu turno fuera de tu provincia (ejemplos, próximas primero)</h3>
                 <table class="out">
                     <thead>
                         <tr>
@@ -763,7 +768,7 @@
                             <th>Destino</th>
                         </tr>
                     </thead>
-                    <tbody id="beforeBody"></tbody>
+                    <tbody id="freeBody"></tbody>
                 </table>
             </div>
             <div class="chartbox">

@@ -139,7 +139,8 @@ Ejemplos extremos:
 | **Gráfica de ubicación** | Capital / comarca / sin plaza. |
 | **Curva de disponibilidad** | P(queda alguna plaza de tu provincia en el turno X); el punto naranja marca tu turno. |
 | **Al llegar tu turno quedaban en tu provincia (media)** | Desglose por nivel E (E06/E04/E03/E02) de las plazas que seguían libres cuando te tocaba elegir: cómo se van retirando las más interesantes. |
-| **Plazas que se llevaron quienes te precedían** | Ejemplos de plazas de tu provincia de nivel E ≥ 03 elegidas por otros aspirantes antes de tu turno. |
+| **Disponibilidad estimada al llegar a tu turno** | Media de plazas libres por provincia y nivel, ordenada por cercanía a tu 1ª opción: dónde se espera que sobren plazas cuando te toque y qué provincias estarán agotadas («0 · agotada»). |
+| **Plazas libres fuera de tu provincia (ejemplos)** | Destinos concretos que seguirían libres al llegar tu turno en otras provincias, muestreados priorizando las más cercanas. |
 | **Tus plazas obtenidas** | Destinos concretos que te salieron en simulaciones al azar. |
 | **📄 Imprimir / Guardar PDF** | Exporta resultados (se fuerza tema claro automáticamente). |
 | **📥 Exportar CSV** | Baja un CSV con parámetros y resultados. |

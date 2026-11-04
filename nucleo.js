@@ -149,9 +149,10 @@ var NUCLEO = (function () {
             availAtPos: new Int32Array(ctx.nCand),
             remAtUser: 0,
             remE: [0, 0, 0, 0],        // plazas restantes en la 1ª provincia al llegar tu turno (E02,E03,E04,E06), acumulado
+            remProvE: new Int32Array(ctx.nProv * 4),  // plazas restantes por provincia y nivel al llegar tu turno, acumulado
             exhArr: [],
             samples: [],
-            samplesBefore: [],         // plazas de tu provincia (nivel >= E03) que se llevaron quienes te precedían
+            samplesFree: [],           // plazas libres al llegar tu turno FUERA de tu provincia (muestreo por cercanía)
             _avail: new Int32Array(tp), _U: new Float64Array(tp), _idx: new Int32Array(tp), _w: new Float64Array(5)
         };
     }
@@ -205,14 +206,32 @@ var NUCLEO = (function () {
                 continue;
             }
 
-            /* Al llegar TU turno: plazas restantes en tu 1ª provincia, por nivel E */
+            /* Al llegar TU turno: estado del catálogo (plazas libres por provincia y nivel)
+               + muestreo de «sobrantes» fuera de tu provincia, ponderado por cercanía */
             if (isUser) {
+                var pm = (ctx.data.proxMatrix && ctx.data.proxMatrix[p.userProv]) || null;
+                var freeIdx = [];
                 for (var q0 = 0; q0 < nElig; q0++) {
                     var j0 = avail[idxs[q0]];
-                    if (ctx.provArr[j0] === p.userProv) {
-                        var e0 = ctx.eArr[j0];
-                        acc.remE[e0 === 6 ? 3 : e0 === 4 ? 2 : e0 === 3 ? 1 : 0]++;
+                    var pr0 = ctx.provArr[j0];
+                    var e0 = ctx.eArr[j0];
+                    var ei0 = e0 === 6 ? 3 : e0 === 4 ? 2 : e0 === 3 ? 1 : 0;
+                    acc.remProvE[pr0 * 4 + ei0]++;
+                    if (pr0 === p.userProv) acc.remE[ei0]++;
+                    else freeIdx.push(j0);
+                }
+                var kf = freeIdx.length;
+                for (var t1 = 0; t1 < 16 && acc.samplesFree.length < 16 && kf > 0; t1++) {
+                    var accw = 0, q1;
+                    for (q1 = 0; q1 < kf; q1++) accw += (pm ? pm[ctx.provArr[freeIdx[q1]]] : 1);
+                    if (accw <= 0) break;
+                    var r1 = rng() * accw, cw = 0, pick = -1;
+                    for (q1 = 0; q1 < kf; q1++) {
+                        cw += (pm ? pm[ctx.provArr[freeIdx[q1]]] : 1);
+                        if (r1 <= cw) { pick = freeIdx[q1]; break; }
                     }
+                    if (pick < 0) break;
+                    if (acc.samplesFree.indexOf(pick) < 0) acc.samplesFree.push(pick);
                 }
             }
 
@@ -306,11 +325,6 @@ var NUCLEO = (function () {
             var chosenPost = avail[chosenK];
             avail[chosenK] = avail[--nAvail];   /* eliminación en O(1) */
             if (ctx.provArr[chosenPost] === p.userProv) { remainingUser--; exhaustion = i; }
-            /* Plazas interesantes (>= E03) de tu provincia que se llevan quienes te preceden */
-            if (!isUser && i < userPos0 && ctx.provArr[chosenPost] === p.userProv &&
-                ctx.eArr[chosenPost] >= 3 && acc.samplesBefore.length < 16 && rng() < 0.08) {
-                acc.samplesBefore.push(chosenPost);
-            }
             if (isUser) {
                 acc.got++;
                 if (ctx.provArr[chosenPost] === p.userProv) acc.gotProv++;

@@ -167,18 +167,9 @@
         $('curveAtUser').textContent = 'P(que quede alguna plaza de ' + DATA.provsDisplay[p.userProv] +
             ' disponible al llegar a tu turno): ' + fmtPct(ys[mk]);
 
-        /* Lo que quedaba en tu provincia al llegar tu turno, por nivel E (media) */
-        var remEEl = $('remEInfo');
-        if (remEEl) {
-            var f1 = function (x) { return (x / n).toFixed(1).replace('.', ','); };
-            remEEl.textContent = 'Al llegar tu turno quedaban en ' + DATA.provsDisplay[p.userProv] +
-                ' (media): E06 ' + f1(acc.remE[3]) + ' · E04 ' + f1(acc.remE[2]) +
-                ' · E03 ' + f1(acc.remE[1]) + ' · E02 ' + f1(acc.remE[0]) +
-                ' plazas. Las «más interesantes» (E06/E04/E03) se van retirando justo antes.';
-        }
-
         /* Fila de ejemplo: nivel, tipo de trabajo, municipio y destino */
         var TRAB_LBL = ['Oficina interna', 'Atención al público', 'Residencia'];
+        var f1 = function (x) { return (x / n).toFixed(1).replace('.', ','); };
         var filaEjemplo = function (q) {
             var tr = document.createElement('tr');
             var eLbl = q[1] === 6 ? 'E06' : q[1] === 4 ? 'E04' : q[1] === 3 ? 'E03' : 'E02';
@@ -190,20 +181,56 @@
             return tr;
         };
 
+        /* Lo que quedaba en tu provincia al llegar tu turno (media por nivel E) */
+        var remEEl = $('remEInfo');
+        if (remEEl) {
+            remEEl.textContent = 'Al llegar tu turno quedaban en ' + DATA.provsDisplay[p.userProv] +
+                ' (media): E06 ' + f1(acc.remE[3]) + ' · E04 ' + f1(acc.remE[2]) +
+                ' · E03 ' + f1(acc.remE[1]) + ' · E02 ' + f1(acc.remE[0]) +
+                ' plazas. Las más interesantes (E06/E04/E03) se van retirando justo antes.';
+        }
+
+        /* Disponibilidad estimada por provincia (media de plazas libres), ordenada por cercanía */
+        var rp = $('remProvBody');
+        if (rp) {
+            var dist = DATA.distMatrix ? DATA.distMatrix[p.userProv] : null;
+            var order = [], op;
+            for (op = 0; op < DATA.provs.length; op++) order.push(op);
+            if (dist) order.sort(function (a, b) { return dist[a] - dist[b]; });
+            var t = '<table class="out"><thead><tr><th>Provincia</th><th>E06</th><th>E04</th><th>E03</th><th>E02</th><th>Libres</th><th>km</th></tr></thead><tbody>';
+            for (var oi = 0; oi < order.length; oi++) {
+                var pi2 = order[oi];
+                var isMine = (pi2 === p.userProv);
+                var tot = (acc.remProvE[pi2 * 4] + acc.remProvE[pi2 * 4 + 1] +
+                    acc.remProvE[pi2 * 4 + 2] + acc.remProvE[pi2 * 4 + 3]) / n;
+                t += '<tr><td><b>' + DATA.provsDisplay[pi2] + '</b>' + (isMine ? ' (tu 1ª)' : '') + '</td><td>' +
+                    f1(acc.remProvE[pi2 * 4 + 3]) + '</td><td>' + f1(acc.remProvE[pi2 * 4 + 2]) +
+                    '</td><td>' + f1(acc.remProvE[pi2 * 4 + 1]) + '</td><td>' + f1(acc.remProvE[pi2 * 4]) +
+                    '</td><td><b>' + (tot < 0.05 ? '0 · agotada' : f1(tot)) + '</b></td><td>' +
+                    (dist ? dist[pi2] : '—') + '</td></tr>';
+            }
+            t += '</tbody></table>';
+            rp.innerHTML = t;
+        }
+
+        /* Plazas libres al llegar tu turno fuera de tu provincia (ejemplos, próximas primero) */
+        var tbF = $('freeBody');
+        if (tbF) {
+            tbF.innerHTML = '';
+            var free = acc.samplesFree.slice();
+            if (DATA.distMatrix) free.sort(function (a, b) {
+                return DATA.distMatrix[p.userProv][DATA.puestos[a][0]] - DATA.distMatrix[p.userProv][DATA.puestos[b][0]];
+            });
+            for (var sf = 0; sf < free.length && sf < 12; sf++) {
+                tbF.appendChild(filaEjemplo(DATA.puestos[free[sf]]));
+            }
+        }
+
         /* Tus plazas obtenidas (ejemplos) */
         var tb = $('outcomesBody');
         tb.innerHTML = '';
         for (var s = 0; s < acc.samples.length && s < 12; s++) {
             tb.appendChild(filaEjemplo(DATA.puestos[acc.samples[s]]));
-        }
-
-        /* Plazas que se llevaron quienes te precedían (ejemplos) */
-        var tbB = $('beforeBody');
-        if (tbB) {
-            tbB.innerHTML = '';
-            for (var sb = 0; sb < acc.samplesBefore.length && sb < 12; sb++) {
-                tbB.appendChild(filaEjemplo(DATA.puestos[acc.samplesBefore[sb]]));
-            }
         }
         $('resSummary').textContent = 'Resultado sobre ' + fmtNum(n) + ' simulaciones · semilla ' + p.seed + '.';
 
