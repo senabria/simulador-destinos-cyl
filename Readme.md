@@ -17,9 +17,9 @@ El producto final es **[simulador.html](simulador.html)**: una web autocontenida
 | [simulador.html](simulador.html) | **La aplicación final**. Datos embebidos + motor + interfaz. Doble clic y listo. *(no se versiona: contiene datos reales embebidos)* |
 | [Aprobados.csv](Aprobados.csv) | Listado oficial: orden de mérito, turno L/M y provincia de examen de los 362 aprobados. *(no se versiona)* |
 | [Relación posibles puestos.csv](Relación posibles puestos.csv) | **Catálogo definitivo**: los 362 puestos convocados con nivel ESP (E06–E02), localidad, provincia (código INE), requisitos y unidad orgánica. Codificación CP850. *(no se versiona)* |
-| [generar_web.py](generar_web.py) | Generador: lee los CSV y ensambla `simulador.html` a partir de las piezas (`--demo` para usar datos sintéticos). |
-| [generar_datos_demo.py](generar_datos_demo.py) | Generador del dataset sintético de demo en `datos_demo/` (mismas distribuciones agregadas, cero datos personales). |
-| [datos_demo/](datos_demo) | CSV sintéticos versionados que alimentan la demo pública de GitHub Pages. |
+| [generar_web.py](generar_web.py) | Generador: lee los CSV y ensambla `simulador.html` a partir de las piezas (`--demo` para usar `datos_demo/`). |
+| [generar_datos_demo.py](generar_datos_demo.py) | Utilidad opcional para regenerar un dataset sintético de demostración en `datos_demo/`. |
+| [datos_demo/](datos_demo) | CSV públicos de la convocatoria (Aprobados y Relación de los 362 puestos, CP850) que alimentan la demo pública de GitHub Pages. |
 | [.github/workflows/demo.yml](.github/workflows/demo.yml) | Workflow de CI: genera la demo sintética, ejecuta los tests y despliega GitHub Pages. |
 | [nucleo.js](nucleo.js) | Motor de simulación (JS puro, sin DOM) con matriz de proximidad física. |
 | [charts.js](charts.js) | Gráficas en canvas dibujadas a mano (barras, curva simple, curva comparativa doble, tornado). |
@@ -85,12 +85,13 @@ node verificar_web.js         # IDs, tokens, orden de scripts y velocidad
 
 ## 4. Demo pública en GitHub Pages
 
-El repo **no versiona datos reales**: la URL **senabria.github.io/simulador-destinos-cyl** sirve una **demo con datos 100 % sintéticos** (`datos_demo/`), regenerada automáticamente en cada push por el workflow [`.github/workflows/demo.yml`](.github/workflows/demo.yml):
+La URL **senabria.github.io/simulador-destinos-cyl** sirve la web generada con los **CSV públicos de la convocatoria** versionados en [`datos_demo/`](datos_demo) (Aprobados y Relación de los 362 puestos, codificación CP850). El workflow [`.github/workflows/demo.yml`](.github/workflows/demo.yml) se ejecuta en cada push:
 
-1. `python generar_datos_demo.py` → CSV sintéticos: 362 aprobados y los 362 puestos definitivos con las mismas distribuciones agregadas que la convocatoria real (niveles E, A5, SSCC).
-2. `python generar_web.py --demo` → genera `simulador.html` con esos datos sintéticos.
-3. `node test_nucleo.js` + `node test_headless.js` + `node verificar_web.js` → batería completa de pruebas.
-4. Publica `simulador.html` como `index.html` en GitHub Pages.
+1. `python generar_web.py --demo` → genera `simulador.html` con los CSV de `datos_demo/`.
+2. `node test_nucleo.js` + `node test_headless.js` + `node verificar_web.js` → batería completa de pruebas (22 + 9 + estructural).
+3. Publica `simulador.html` como `index.html` en GitHub Pages.
+
+[`generar_datos_demo.py`](generar_datos_demo.py) queda como utilidad opcional para regenerar un dataset sintético de demostración en `datos_demo/`.
 
 ---
 

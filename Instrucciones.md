@@ -36,7 +36,7 @@ flowchart TD
 
 | Control | Qué hace |
 |---|---|
-| **Aprobados.csv** | Sustituye en vivo el listado embebido (orden de mérito, turno L/M, provincia de examen). Requiere columnas ORDEN, TURNO, PROVINCIA. Codificación Windows-1252. |
+| **Aprobados.csv** | Sustituye en vivo el listado embebido (orden de mérito, turno L/M, provincia de examen). Requiere columnas ORDEN, TURNO, PROVINCIA. Codificación CP850. |
 | **Relación posibles puestos.csv** | Sustituye el catálogo embebido (los 362 puestos definitivos). Formato oficial de la Resolución: PUESTO OFERTADO, ESP, PROV. (código INE), LOCALIDAD, REQUISITOS, UNIDAD ORGÁNICA, JERARQUÍA ORGÁNICA… Las columnas se localizan **por nombre**, por lo que el orden de los campos es indiferente. Codificación CP850. |
 
 > 💡 Ambos CSV van embebidos al generar la web con `python generar_web.py`; los selectores sirven para probar datos nuevos **sin regenerar**. La tabla bajo los selectores muestra el catálogo cargado por provincia y nivel E.
@@ -138,7 +138,9 @@ Ejemplos extremos:
 | **Gráfica de niveles** | Distribución de niveles E obtenidos por TI. |
 | **Gráfica de ubicación** | Capital / comarca / sin plaza. |
 | **Curva de disponibilidad** | P(queda alguna plaza de tu provincia en el turno X); el punto naranja marca tu turno. |
-| **Ejemplos de plazas obtenidas** | Destinos concretos que te salieron en simulaciones al azar. |
+| **Al llegar tu turno quedaban en tu provincia (media)** | Desglose por nivel E (E06/E04/E03/E02) de las plazas que seguían libres cuando te tocaba elegir: cómo se van retirando las más interesantes. |
+| **Plazas que se llevaron quienes te precedían** | Ejemplos de plazas de tu provincia de nivel E ≥ 03 elegidas por otros aspirantes antes de tu turno. |
+| **Tus plazas obtenidas** | Destinos concretos que te salieron en simulaciones al azar. |
 | **📄 Imprimir / Guardar PDF** | Exporta resultados (se fuerza tema claro automáticamente). |
 | **📥 Exportar CSV** | Baja un CSV con parámetros y resultados. |
 

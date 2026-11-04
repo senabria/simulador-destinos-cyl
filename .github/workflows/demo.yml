@@ -29,9 +29,8 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Generar dataset sintetico y la web
+      - name: Generar la web con los CSV publicos de datos_demo/
         run: |
-          python generar_datos_demo.py
           python generar_web.py --demo
 
       - name: Pruebas del motor (22)

@@ -148,8 +148,10 @@ var NUCLEO = (function () {
             ssccCount: [0, 0, 0],      // SSCC, territorial, sin plaza
             availAtPos: new Int32Array(ctx.nCand),
             remAtUser: 0,
+            remE: [0, 0, 0, 0],        // plazas restantes en la 1ª provincia al llegar tu turno (E02,E03,E04,E06), acumulado
             exhArr: [],
             samples: [],
+            samplesBefore: [],         // plazas de tu provincia (nivel >= E03) que se llevaron quienes te precedían
             _avail: new Int32Array(tp), _U: new Float64Array(tp), _idx: new Int32Array(tp), _w: new Float64Array(5)
         };
     }
@@ -201,6 +203,17 @@ var NUCLEO = (function () {
             if (nElig === 0) {
                 if (isUser) { acc.sinPlaza++; acc.eCount[4]++; acc.munCount[2]++; acc.trabCount[3]++; acc.ssccCount[2]++; }
                 continue;
+            }
+
+            /* Al llegar TU turno: plazas restantes en tu 1ª provincia, por nivel E */
+            if (isUser) {
+                for (var q0 = 0; q0 < nElig; q0++) {
+                    var j0 = avail[idxs[q0]];
+                    if (ctx.provArr[j0] === p.userProv) {
+                        var e0 = ctx.eArr[j0];
+                        acc.remE[e0 === 6 ? 3 : e0 === 4 ? 2 : e0 === 3 ? 1 : 0]++;
+                    }
+                }
             }
 
             var chosenK;
@@ -293,6 +306,11 @@ var NUCLEO = (function () {
             var chosenPost = avail[chosenK];
             avail[chosenK] = avail[--nAvail];   /* eliminación en O(1) */
             if (ctx.provArr[chosenPost] === p.userProv) { remainingUser--; exhaustion = i; }
+            /* Plazas interesantes (>= E03) de tu provincia que se llevan quienes te preceden */
+            if (!isUser && i < userPos0 && ctx.provArr[chosenPost] === p.userProv &&
+                ctx.eArr[chosenPost] >= 3 && acc.samplesBefore.length < 16 && rng() < 0.08) {
+                acc.samplesBefore.push(chosenPost);
+            }
             if (isUser) {
                 acc.got++;
                 if (ctx.provArr[chosenPost] === p.userProv) acc.gotProv++;

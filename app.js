@@ -167,18 +167,43 @@
         $('curveAtUser').textContent = 'P(que quede alguna plaza de ' + DATA.provsDisplay[p.userProv] +
             ' disponible al llegar a tu turno): ' + fmtPct(ys[mk]);
 
-        var tb = $('outcomesBody');
-        tb.innerHTML = '';
-        for (var s = 0; s < acc.samples.length && s < 12; s++) {
-            var q = DATA.puestos[acc.samples[s]];
+        /* Lo que quedaba en tu provincia al llegar tu turno, por nivel E (media) */
+        var remEEl = $('remEInfo');
+        if (remEEl) {
+            var f1 = function (x) { return (x / n).toFixed(1).replace('.', ','); };
+            remEEl.textContent = 'Al llegar tu turno quedaban en ' + DATA.provsDisplay[p.userProv] +
+                ' (media): E06 ' + f1(acc.remE[3]) + ' · E04 ' + f1(acc.remE[2]) +
+                ' · E03 ' + f1(acc.remE[1]) + ' · E02 ' + f1(acc.remE[0]) +
+                ' plazas. Las «más interesantes» (E06/E04/E03) se van retirando justo antes.';
+        }
+
+        /* Fila de ejemplo: nivel, tipo de trabajo, municipio y destino */
+        var TRAB_LBL = ['Oficina interna', 'Atención al público', 'Residencia'];
+        var filaEjemplo = function (q) {
             var tr = document.createElement('tr');
             var eLbl = q[1] === 6 ? 'E06' : q[1] === 4 ? 'E04' : q[1] === 3 ? 'E03' : 'E02';
             var provLbl = DATA.provsDisplay[q[0]];
             var ssccTag = (q.length > 8 && q[8]) ? ' <span style="color:var(--acc);font-size:0.75rem;">[SSCC]</span>' : '';
-            tr.innerHTML = '<td><b>' + eLbl + '</b> (' + provLbl + ')</td><td>' + esc(DATA.tipos[q[7]]) + ssccTag + '</td><td>' +
+            tr.innerHTML = '<td><b>' + eLbl + '</b> (' + provLbl + ')</td><td>' + esc(TRAB_LBL[q[2]] || '—') + ssccTag + '</td><td>' +
                 esc(DATA.muns[q[4]]) + (DATA.munCap[q[4]] ? ' (capital)' : ' (comarca)') + '</td><td>' +
                 esc(DATA.descrs[q[5]]) + '</td>';
-            tb.appendChild(tr);
+            return tr;
+        };
+
+        /* Tus plazas obtenidas (ejemplos) */
+        var tb = $('outcomesBody');
+        tb.innerHTML = '';
+        for (var s = 0; s < acc.samples.length && s < 12; s++) {
+            tb.appendChild(filaEjemplo(DATA.puestos[acc.samples[s]]));
+        }
+
+        /* Plazas que se llevaron quienes te precedían (ejemplos) */
+        var tbB = $('beforeBody');
+        if (tbB) {
+            tbB.innerHTML = '';
+            for (var sb = 0; sb < acc.samplesBefore.length && sb < 12; sb++) {
+                tbB.appendChild(filaEjemplo(DATA.puestos[acc.samplesBefore[sb]]));
+            }
         }
         $('resSummary').textContent = 'Resultado sobre ' + fmtNum(n) + ' simulaciones · semilla ' + p.seed + '.';
 

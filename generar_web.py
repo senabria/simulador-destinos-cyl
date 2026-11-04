@@ -95,6 +95,11 @@ def col_index(head, keywords):
     return None
 
 
+def fix_typos(s):
+    """El CSV oficial mezcla codificaciones: 'à/è/ò' son erratas de 'á/é/ó'."""
+    return s.replace("à", "á").replace("è", "é").replace("ò", "ó")
+
+
 def parse_puestos(path):
     """Parsea el catálogo definitivo (formato de la Resolución de convocatoria).
 
@@ -108,8 +113,9 @@ def parse_puestos(path):
     i_esp = col_index(head, ["ESP"])                # Complemento Específico (E06..E02)
     i_prov = col_index(head, ["PROV."])             # Código INE de provincia
     i_loc = col_index(head, ["LOCALIDAD"])
-    i_req = col_index(head, ["REQUISITOS"])         # Contiene "Función FCA0xx" / "horario especial"
-    i_nombre = col_index(head, ["PUESTO OFERTADO"])
+    i_req = col_index(head, ["REQUISITOS"])         # En el CSV real suele venir VACÍO
+    i_car = col_index(head, ["CARACTERISTICAS"])    # ...y el texto (Función FCA0xx,
+    i_nombre = col_index(head, ["PUESTO OFERTADO"]) #     horario especial) va aquí
     i_unidad = col_index(head, ["UNIDAD ORGANICA"]) # Destino concreto
     i_jerar = col_index(head, ["JERARQUIA"])        # "CONSEJERIA ... > D.G. ... > SERVICIO ..."
     needed = [i_esp, i_prov, i_loc, i_req, i_nombre, i_unidad, i_jerar]
@@ -136,14 +142,18 @@ def parse_puestos(path):
             continue
         prov = PROVS.index(prov_n)
         e = parse_e(r[i_esp])
-        mun = r[i_loc].strip() or prov_n
+        mun = fix_typos(r[i_loc].strip() or prov_n)
         loc = mun
-        fun = norm(r[i_req])
+        # El texto de funciones está en "Características" cuando "Requisitos" va vacío
+        req_txt = r[i_req].strip()
+        if i_car is not None and not req_txt:
+            req_txt = r[i_car].strip()
+        fun = norm(req_txt)
         m_fca = re.search(r"FCA\s*(\d{3})", fun)
         tipo = ("CA" + m_fca.group(1)) if m_fca else ""
-        nombre = r[i_nombre].strip()
-        descr = r[i_unidad].strip() or nombre
-        jerar = r[i_jerar].strip()
+        nombre = fix_typos(r[i_nombre].strip())
+        descr = fix_typos(r[i_unidad].strip() or nombre)
+        jerar = fix_typos(r[i_jerar].strip())
         consj = jerar.split(">")[0].strip()
 
         texto = norm(nombre + " " + descr + " " + mun + " " + loc) + " " + fun + " " + norm(jerar)
@@ -187,7 +197,8 @@ def parse_puestos(path):
 
 
 def parse_aprobados(path):
-    with open(path, encoding="cp1252", errors="replace", newline="") as f:
+    # El listado de aprobados también está en CP850 (º=0xA7, ó=0xA2)
+    with open(path, encoding="cp850", errors="replace", newline="") as f:
         rows = list(csv.reader(f, delimiter=";"))
     head = [norm(h) for h in rows[0]]
     i_ord = col_index(head, ["ORDEN"])

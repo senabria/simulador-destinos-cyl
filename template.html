@@ -741,6 +741,7 @@
                 <button class="sec" id="btnExportCSV">📥 Exportar CSV con resultados</button>
             </div>
             <div class="hint" id="curveAtUser"></div>
+            <div class="hint" id="remEInfo"></div>
             <div class="chartbox">
                 <h3>Nivel de Complemento Específico obtenido</h3><canvas id="chartE" style="height:220px"></canvas>
             </div>
@@ -752,7 +753,21 @@
                     id="chartCurve" style="height:260px"></canvas>
             </div>
             <div class="chartbox">
-                <h3>Ejemplos de plazas obtenidas (simulaciones al azar)</h3>
+                <h3>Plazas de tu provincia que se llevaron quienes te precedían (nivel E ≥ 03, ejemplos)</h3>
+                <table class="out">
+                    <thead>
+                        <tr>
+                            <th>Nivel</th>
+                            <th>Tipo</th>
+                            <th>Municipio</th>
+                            <th>Destino</th>
+                        </tr>
+                    </thead>
+                    <tbody id="beforeBody"></tbody>
+                </table>
+            </div>
+            <div class="chartbox">
+                <h3>Tus plazas obtenidas (simulaciones al azar)</h3>
                 <table class="out">
                     <thead>
                         <tr>
