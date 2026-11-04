@@ -558,8 +558,8 @@
         <button id="btnTheme" title="Cambiar tema claro/oscuro"
             style="float:right; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.45); color:#fff; padding:7px 12px;">🌙</button>
         <h1>🎯 Simulador de destinos — CyL 2026</h1>
-        <p>Monte Carlo multi-criterio con los 362 aprobados reales y el catálogo de ~1600 puestos (Complemento
-            Específico E06–E02). Todo local y offline.</p>
+        <p>Monte Carlo multi-criterio con los 362 aprobados reales y los 362 puestos definitivos convocados
+            (Complemento Específico E06–E02). Todo local y offline.</p>
     </header>
 
     <main>
@@ -602,25 +602,6 @@
                     preferencia</label>
             </div>
             <div id="ctxInfo" class="hint"></div>
-        </section>
-
-        <section class="card">
-            <h2>🪑 Plazas ofertadas por provincia</h2>
-            <div class="row" style="align-items:center; margin-bottom:8px">
-                <span class="badge" id="seatsBadge">🟢 362</span>
-                <span class="hint" style="margin:0">total: <b id="seatsTotal">362</b> plazas</span>
-            </div>
-            <div id="seatsGrid"></div>
-            <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px">
-                <button class="sec" id="preset2025" style="border-color:var(--acc); font-weight:600;">🏛️ Oferta 2025
-                    (380→362)</button>
-                <button class="sec" id="presetCat">Proporcional catálogo</button>
-                <button class="sec" id="presetApro">Proporcional aprobados</button>
-                <button class="sec" id="presetRPT">RPT original</button>
-            </div>
-            <div id="deficitWarn"></div>
-            <div class="hint">El reparto por provincia se usa para muestrear el subconjunto de puestos ofertados (1600 →
-                362) de forma estratificada.</div>
         </section>
 
         <section class="card">
@@ -685,7 +666,7 @@
                 <input type="range" id="u-sscc" min="0" max="1" step="0.05" value="0.5"><span class="val"
                     id="vu-sscc">0,50</span>
             </div>
-            <div class="hint">El «horario especial» (643000, típico de los E06 de registro) puede ser un bonus o un
+            <div class="hint">El «horario especial» (marcado en la relación de puestos) puede ser un bonus o un
                 castigo (valor negativo) según el opositor. Preferencia SSCC pondera puestos en Servicios Centrales
                 frente a Territoriales.</div>
         </section>
@@ -711,27 +692,6 @@
             </div>
             <div class="hint">Quien renuncia no ocupa plaza (no hay segunda vuelta en el modelo). El nº 108 es Turno M
                 con Zamora: te precede.</div>
-        </section>
-
-        <section class="card">
-            <h2>🎲 Escenario del recorte 1600 → 362</h2>
-            <div class="radio"><input type="radio" name="esc" id="esc-2025" value="calibrado2025" checked>
-                <label for="esc-2025"><b>🏛️ Calibrado 2025 (Recomendado)</b> <span class="sub">Muestrea los puestos
-                        según las proporciones reales de niveles E de 2025 por provincia</span></label>
-            </div>
-            <div class="radio"><input type="radio" name="esc" id="esc-ale" value="aleatorio">
-                <label for="esc-ale">Aleatorio <span class="sub">muestreo uniforme dentro de cada
-                        provincia</span></label>
-            </div>
-            <div class="radio"><input type="radio" name="esc" id="esc-opt" value="optimista">
-                <label for="esc-opt">Optimista <span class="sub">se conservan primero los puestos mejor pagados (E06,
-                        E04…)</span></label>
-            </div>
-            <div class="radio"><input type="radio" name="esc" id="esc-pes" value="pesimista">
-                <label for="esc-pes">Pesimista <span class="sub">se conservan primero los E02</span></label>
-            </div>
-            <div class="hint">No sabemos qué 362 puestos se ofertarán: cada simulación extrae, por provincia, tantas
-                plazas como indiques en «Plazas ofertadas».</div>
         </section>
 
         <section class="card wide">
@@ -811,7 +771,7 @@
         <section class="card wide" id="compareSection">
             <h2>⚖️ Comparador de escenarios y perfiles</h2>
             <p class="hint">Guarda el resultado de una simulación para compararlo lado a lado con otra (por ejemplo:
-                turno 118 vs 140, Escenario 2025 vs Optimista, o fidelidad 80% vs 50%).</p>
+                turno 118 vs 140, o fidelidad 90% vs 70%).</p>
             <div class="row" style="margin-bottom:12px; gap:8px;">
                 <button class="sec" id="btnSaveA">💾 Guardar como Escenario A</button>
                 <button class="sec" id="btnSaveB">💾 Guardar como Escenario B</button>
@@ -842,15 +802,15 @@
             <ul class="asunciones">
                 <li>Orden de mérito, turno y provincia de examen reales de <b>Aprobados.csv</b> (362 aspirantes).</li>
                 <li>Cada opositor tiene pesos propios ~ Dirichlet(homogeneidad) sobre 5 criterios: provincia, salario
-                    (E06>E04>E03>E02), capital/comarca, horario especial (643000) y tipo de trabajo (interna / atención
-                    / residencias).</li>
+                    (E06>E04>E03>E02), capital/comarca, horario especial declarado en la relación y tipo de trabajo
+                    (interna / atención / residencias).</li>
                 <li>Con probabilidad «fidelidad» prefiere su provincia de examen; en caso contrario, la provincia se
                     sortea según afinidad geográfica por cercanía física.</li>
                 <li>Elige entre las plazas libres por softmax con la temperatura indicada (0 = determinista). Sin el
                     «fallback sesgado» del script original.</li>
                 <li>Renuncias: cada opositor (menos tú) renuncia antes de elegir con la probabilidad indicada.</li>
-                <li>Subconjunto 1600→362: muestreo estratificado por provincia según las plazas indicadas, con escenario
-                    calibrado con los datos de 2025, aleatorio, optimista o pesimista.</li>
+                <li>Oferta definitiva: en cada simulación compiten los 362 puestos reales convocados (sin muestreo ni
+                    escenarios de recorte).</li>
                 <li>Tú nunca renuncias y eliges, entre las plazas de tu provincia (u otras si lo activas), la de mayor
                     media de salario + municipio + horario + tipo de trabajo + SSCC.</li>
                 <li>IC 95 % de Wilson sobre la proporción de éxito; la curva de disponibilidad se mide antes de que

@@ -1,6 +1,6 @@
 # 📖 Instrucciones y referencia de controles — Simulador de destinos CyL 2026
 
-Guía de consulta de todos los controles de `simulador.html`. El simulador es un Monte Carlo multi-criterio: repite miles de veces el concurso completo (362 aprobados —los del dataset embebido o los que cargues tú— eligiendo sobre un subconjunto de 362 plazas del catálogo de ~1600) y mide con qué probabilidad te queda plaza en tu provincia.
+Guía de consulta de todos los controles de `simulador.html`. El simulador es un Monte Carlo multi-criterio: repite miles de veces el concurso completo (362 aprobados reales eligiendo entre **los 362 puestos definitivos convocados**) y mide con qué probabilidad te queda plaza en tu provincia.
 
 ---
 
@@ -8,9 +8,8 @@ Guía de consulta de todos los controles de `simulador.html`. El simulador es un
 
 ```mermaid
 flowchart TD
-    A[Catálogo ~1600 puestos] -->|«Plazas ofertadas» +<br/>«Escenario del recorte»| B[Subconjunto de 362 plazas<br/>estratificado por provincia]
-    C[Aprobados.csv<br/>362 en orden de mérito] --> D[Turno 1, 2, 3… 362]
-    B --> D
+    A[Catálogo definitivo<br/>362 puestos reales] --> D[Turno 1, 2, 3… 362]
+    C[Aprobados.csv<br/>362 en orden de mérito real] --> D
     D --> E{Por cada opositor}
     E -->|15 % configurable| F[✋ Renuncia → no ocupa plaza]
     E -->|85 %| G[Sortea provincia preferida<br/>«Fidelidad» 80 % = su provincia de examen]
@@ -37,10 +36,10 @@ flowchart TD
 
 | Control | Qué hace |
 |---|---|
-| **Aprobados.csv** | Sustituye en vivo el listado embebido (orden de mérito, turno L/M, provincia de examen). Requiere columnas ORDEN, TURNO, PROVINCIA. Puedes usar la resolución oficial de tu convocatoria (BOCyL) exportada a CSV: los datos cargados no salen de tu navegador. |
-| **Relación posibles puestos.csv** | Sustituye el catálogo embebido (~1600 puestos). Requiere columnas PROVINCIA, MUNICIPIO, LOCALIDAD, FUNCIÓN, PUESTO/TIPO, NOMBRE, DESCRIP y CONSEJERÍA + COMPLEMENTO. Al cargar recalcula el catálogo, los avisos de déficit y el preset «Proporcional catálogo». |
+| **Aprobados.csv** | Sustituye en vivo el listado embebido (orden de mérito, turno L/M, provincia de examen). Requiere columnas ORDEN, TURNO, PROVINCIA. Codificación Windows-1252. |
+| **Relación posibles puestos.csv** | Sustituye el catálogo embebido (los 362 puestos definitivos). Formato oficial de la Resolución: PUESTO OFERTADO, ESP, PROV. (código INE), LOCALIDAD, REQUISITOS, UNIDAD ORGÁNICA, JERARQUÍA ORGÁNICA… Las columnas se localizan **por nombre**, por lo que el orden de los campos es indiferente. Codificación CP850. |
 
-> 💡 La versión pública de la web se genera con el **dataset sintético** de `datos_demo/` (ver Readme). Para trabajar con datos reales: cárgalos aquí en vivo (no salen de tu navegador) o coloca tus CSV en la raíz del proyecto y ejecuta `python generar_web.py`; quedan excluidos del repositorio por `.gitignore`. Codificación esperada: Windows-1252.
+> 💡 Ambos CSV van embebidos al generar la web con `python generar_web.py`; los selectores sirven para probar datos nuevos **sin regenerar**. La tabla bajo los selectores muestra el catálogo cargado por provincia y nivel E.
 
 ---
 
@@ -57,21 +56,6 @@ flowchart TD
 
 ---
 
-## 🪑 Plazas ofertadas por provincia
-
-Rejilla editable con las plazas ofertadas por cada una de las 9 provincias. El total debería sumar **362** (badge 🟢; si no, 🔴 avisa). Este reparto alimenta el muestreo estratificado 1600 → 362.
-
-| Preset (en vertical) | Qué hace |
-|---|---|
-| **🏛️ Oferta 2025 (380→362)** | Las 380 plazas reales de 2025 escaladas a 362: [126, 38, 37, 30, 28, 28, 33, 24, 18]. **Recomendado**: es la última distribución real conocida. |
-| **Proporcional catálogo** | Reparte los 362 aprobados proporcionalmente a los puestos del catálogo por provincia (426/1636×362 ≈ 94 para Valladolid…). Se recalcula si subes otro catálogo. **Cuando llegue el CSV definitivo de 362 plazas**, este preset reproducirá exactamente su reparto por provincia. |
-| **Proporcional aprobados** | Reparte los 362 según dónde examinó cada aprobado (más plazas donde más demanda hay). |
-| **RPT original** | Valores fijos de la RPT: [94, 52, 42, 40, 29, 28, 26, 26, 25]. Coincide casi exactamente con «Proporcional catálogo» porque la RPT ya es proporcional al catálogo actual. |
-
-El aviso de déficit 🔴 avisa si pides más plazas que puestos tiene una provincia en el catálogo (solo se ofertarán los disponibles).
-
----
-
 ## ⚖️ Pesos de los criterios (opositores)
 
 Importancia **media** de cada criterio en la utilidad de los opositores simulados. Cada opositor recibe pesos propios sorteados alrededor de estos valores.
@@ -81,7 +65,7 @@ Importancia **media** de cada criterio en la utilidad de los opositores simulado
 | **Provincia** | 40 | Cuánto pesa que el puesto esté en su provincia preferida (ver distinción con «Fidelidad» más abajo). |
 | **Salario (nivel E)** | 25 | Peso del nivel de Complemento Específico (E06 > E04 > E03 > E02). |
 | **Capital vs comarca** | 15 | Peso de trabajar en capital frente a comarca. |
-| **Horario especial** | 10 | Peso del horario 643000 (típico E06 de registro). |
+| **Horario especial** | 10 | Peso del horario especial declarado en la relación de puestos. |
 | **Tipo de trabajo** | 10 | Peso de interna vs atención al público vs residencias. |
 
 | Control | Qué hace |
@@ -100,7 +84,7 @@ Valor de cada cosa en la escala 0–1 (o −1…1 en horario). Es la «moneda» 
 |---|---|---|
 | **E06 / E04 / E03 / E02** | 1 / 0.66 / 0.33 / 0 | Utilidad de cada nivel de Complemento Específico. |
 | **Capital / Comarca** | 1 / 0.4 | Utilidad de ubicación del puesto. |
-| **Horario especial** | 0.5 (admite negativo) | Bonus o **castigo** (negativo) al horario 643000. |
+| **Horario especial** | 0.5 (admite negativo) | Bonus o **castigo** (negativo) al horario especial. |
 | **Oficina interna / Atención / Residencias** | 1 / 0.5 / 0.2 | Utilidad de cada tipo de trabajo. |
 | **Preferencia SSCC** | 0.5 | Pondera puestos en Servicios Centrales (Valladolid) frente a Territoriales. |
 
@@ -113,7 +97,7 @@ Valor de cada cosa en la escala 0–1 (o −1…1 en horario). Es la «moneda» 
 | **Fidelidad a su provincia** | 0–100 % · 80 % | Probabilidad de que cada opositor prefiera su **propia provincia de examen**. Con el 20 % restante, su preferencia se sortea (ver siguiente control). |
 | **☑ Afinidad geográfica** | on | Si un opositor no es fiel, su provincia preferida se sortea ponderando la **cercanía en km** a su origen. Si se desactiva, se sortea según la distribución de aprobados. |
 | **Renuncias (antes de elegir)** | 0–50 % · 15 % | Probabilidad de que cada opositor (nunca tú) renuncie y no ocupe plaza. No hay segunda vuelta en el modelo. |
-| **Tratamiento del Turno M** | Igual / Solo E02 / Excluidos | Los 11 aprobados de turno M: comportarse igual que todos, elegir solo puestos E02 (reserva) o desaparecer de la simulación. Ojo: en el perfil de ejemplo (turno 118, Zamora) hay aprobados de turno M por delante. |
+| **Tratamiento del Turno M** | Igual / Solo E02 / Excluidos | Los 11 aprobados de turno M: comportarse igual que todos, elegir solo puestos E02 (reserva) o desaparecer de la simulación. Ojo: el nº 108 es Turno M con Zamora y te precede. |
 
 ### ⭐ Distinción clave: «Fidelidad» vs peso «Provincia»
 
@@ -128,19 +112,6 @@ No son redundantes: actúan en **fases distintas** de la decisión.
 Ejemplos extremos:
 - **Fidelidad 100 % + peso Provincia 0**: todos prefieren su provincia de examen, pero eso no influye en su elección (deciden por salario, capital…).
 - **Fidelidad 0 % + peso Provincia 40**: nadie es fiel a su provincia (preferencia sorteada por cercanía), pero esa preferencia sorteada pesa un 40 % al elegir.
-
----
-
-## 🎲 Escenario del recorte 1600 → 362
-
-Nadie sabe aún qué 362 puestos se ofertarán: cada simulación extrae, por provincia, tantas plazas como indiques en «Plazas ofertadas». El escenario decide **cuáles** se conservan del catálogo.
-
-| Opción | Qué hace |
-|---|---|
-| **🏛️ Calibrado 2025 (Recomendado)** | Muestreo estratificado por nivel E usando las proporciones reales de la oferta de 2025 por provincia. |
-| **Aleatorio** | Muestreo uniforme dentro del pool de cada provincia. |
-| **Optimista** | Se conservan primero los mejor pagados (E06, E04…). |
-| **Pesimista** | Se conservan primero los E02. |
 
 ---
 
@@ -175,13 +146,13 @@ Nadie sabe aún qué 362 puestos se ofertarán: cada simulación extrae, por pro
 
 ## ⚖️ Comparador de escenarios y perfiles
 
-Guarda el resultado de una simulación como **Escenario A** o **B** (p. ej. turno 118 vs 140, calibrado 2025 vs optimista, fidelidad 80 % vs 50 %) y compáralos en tabla lado a lado y con las dos curvas de disponibilidad superpuestas. «Limpiar comparación» vacía ambos slots.
+Guarda el resultado de una simulación como **Escenario A** o **B** (p. ej. turno 118 vs 140, o fidelidad 90 % vs 70 %) y compáralos en tabla lado a lado y con las dos curvas de disponibilidad superpuestas. «Limpiar comparación» vacía ambos slots.
 
 ---
 
 ## 🌪️ Análisis de sensibilidad (tornado)
 
-Mueve **un factor a la vez** ±50 % (pesos, homogeneidad, fidelidad, renuncias, escenario, turno M…) con la misma semilla y muestra cuánto cambia P(plaza). Barras verdes = valor alto del factor; rojas = valor bajo. La línea vertical es tu resultado base. Es la forma rápida de saber a qué hipótesis es sensible tu resultado y cuáles dan igual.
+Mueve **un factor a la vez** (pesos, homogeneidad, fidelidad, renuncias, turno M…) con la misma semilla y muestra cuánto cambia P(plaza en tu 1ª provincia). Barras verdes = valor alto del factor; rojas = valor bajo. La línea vertical es tu resultado base. Es la forma rápida de saber a qué hipótesis es sensible tu resultado y cuáles dan igual.
 
 | Control | Defecto | Significado |
 |---|---|---|
@@ -191,11 +162,11 @@ Mueve **un factor a la vez** ±50 % (pesos, homogeneidad, fidelidad, renuncias, 
 
 ## 📜 Asunciones del modelo (resumen)
 
-- Orden de mérito, turno y provincia de examen (Aprobados.csv, 362 aspirantes): los del dataset embebido (sintético en la demo) o los cargados en vivo.
+- Orden de mérito, turno y provincia de examen **reales** (Aprobados.csv, 362 aspirantes).
+- **Oferta definitiva**: los 362 puestos reales convocados compiten en cada simulación (sin muestreo ni escenarios de recorte).
 - Pesos propios por opositor ~ Dirichlet(homogeneidad) sobre 5 criterios.
 - Elección entre plazas libres por softmax con la temperatura indicada.
 - Renuncias antes de elegir, sin segunda vuelta ni devolución de plazas.
-- Subconjunto 1600→362 estratificado por provincia según el escenario elegido.
 - Tú nunca renuncias y eliges la mejor plaza de tu provincia (u otras si lo activas).
 - Limitaciones: sin promoción interna diferenciada, horario especial con un único valor de utilidad.
 
@@ -206,6 +177,5 @@ Mueve **un factor a la vez** ±50 % (pesos, homogeneidad, fidelidad, renuncias, 
 | Tarea | Cómo |
 |---|---|
 | Actualizar datos embebidos | Sustituir los CSV y ejecutar `python generar_web.py` → regenera `simulador.html` y `datos.json`. |
-| Verificar todo | `node test_nucleo.js` (22 pruebas del motor) y `node verificar_web.js` (estructura + rendimiento). |
+| Verificar todo | `node test_nucleo.js` (22 pruebas del motor), `node test_headless.js` (9 de interfaz) y `node verificar_web.js` (estructura + rendimiento). |
 | Probar datos sin regenerar | Usar los selectores de «📋 Datos y catálogo» en el navegador. |
-| Cuando llegue el CSV final de 362 plazas | Sustituir `Relación posibles puestos.csv` y regenerar; «Proporcional catálogo» pasará a reflejar exactamente ese reparto. |

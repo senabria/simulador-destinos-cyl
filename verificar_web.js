@@ -42,10 +42,10 @@ function infW() {
     return w.map(function (v) { return v / DATA.aprobados.length; });
 }
 var p = {
-    seats: DATA.seatsRPT.slice(), wBase: [40, 25, 15, 10, 10],
+    wBase: [40, 25, 15, 10, 10],
     utilSal: [0, 0.33, 0.66, 1], utilMun: [1, 0.4], utilHor: 0.5, utilFun: [1, 0.5, 0.2],
     fidelidad: 0.8, pesosInfidelidad: infW(), renuncias: 0.15, conc: 30, temp: 0.1,
-    escenario: 'aleatorio', turnoM: 'igual', userPos: 118, userProv: 5,
+    turnoM: 'igual', userPos: 118, userProv: 5,
     aceptaOtras: false, seed: 42, earlyStop: false
 };
 var ctx = NUCLEO.buildCtx(DATA, p);

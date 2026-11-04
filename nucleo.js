@@ -57,12 +57,11 @@ var NUCLEO = (function () {
 
     /* ---------- Contexto estático derivado de (datos, parámetros) ----------
        p = {
-         seats[9], wBase[5] (prov, sal, mun, hor, fun),
+         wBase[5] (prov, sal, mun, hor, fun),
          utilSal[4] (E02,E03,E04,E06), utilMun[2] (capital, comarca),
          utilHor, utilFun[3] (interna, atención, residencias), utilSSCC,
          fidelidad, pesosInfidelidad[9], usarProximidad (bool),
          renuncias, conc (Dirichlet), temp (softmax),
-         escenario ('calibrado2025'|'aleatorio'|'optimista'|'pesimista'),
          turnoM ('igual'|'soloE02'|'excluidos'),
          userPos, userProv, userProv2, aceptaOtras, seed, earlyStop
        } */
@@ -73,10 +72,9 @@ var NUCLEO = (function () {
         var salU = new Float64Array(n), munU = new Float64Array(n), horU = new Float64Array(n), funU = new Float64Array(n), ssccU = new Float64Array(n);
         var salMap = { 2: p.utilSal[0], 3: p.utilSal[1], 4: p.utilSal[2], 6: p.utilSal[3] };
         var funMap = [p.utilFun[0], p.utilFun[1], p.utilFun[2]];
-        var pools = [], poolsByE = [];
+        var pools = [];
         for (i = 0; i < data.provs.length; i++) {
             pools.push([]);
-            poolsByE.push({ 2: [], 3: [], 4: [], 6: [] });
         }
         var utilSSCCVal = (p.utilSSCC !== undefined ? p.utilSSCC : 0.5);
 
@@ -91,16 +89,6 @@ var NUCLEO = (function () {
             funU[i] = funMap[q[2]] || 0;
             ssccU[i] = ssccArr[i] ? utilSSCCVal : 0;
             pools[q[0]].push(i);
-            if (poolsByE[q[0]][q[1]]) poolsByE[q[0]][q[1]].push(i);
-        }
-
-        function sortedPool(pi, desc) {
-            return pools[pi].slice().sort(function (a, b) { return desc ? (eArr[b] - eArr[a]) : (eArr[a] - eArr[b]); });
-        }
-        var poolsDesc = [], poolsAsc = [];
-        for (i = 0; i < pools.length; i++) {
-            poolsDesc.push(sortedPool(i, true));
-            poolsAsc.push(sortedPool(i, false));
         }
 
         // Matriz de infidelidad (por provincia de origen si usarProximidad=true)
@@ -128,81 +116,23 @@ var NUCLEO = (function () {
         var alpha = [];
         for (i = 0; i < wB.length; i++) alpha.push(wB[i] * p.conc);
 
-        var totalPosts = 0;
-        for (i = 0; i < pools.length; i++) totalPosts += Math.min(p.seats[i] || 0, pools[i].length);
+        var totalPosts = n; /* oferta definitiva: todos los puestos del catálogo */
 
         return {
             data: data, n: n, provArr: provArr, eArr: eArr, trabArr: trabArr, horArr: horArr, capArr: capArr, ssccArr: ssccArr,
             salU: salU, munU: munU, horU: horU, funU: funU, ssccU: ssccU,
-            pools: pools, poolsByE: poolsByE, poolsDesc: poolsDesc, poolsAsc: poolsAsc,
+            pools: pools,
             cumInfByProv: cumInfByProv, candProv: candProv, candM: candM, alpha: alpha,
             nProv: data.provs.length, nCand: nCand, totalPosts: totalPosts
         };
     }
 
-    /* Subconjunto 1600 -> N plazas según escenario (estratificado por provincia) */
-    function makeSubset(ctx, p, rng, outArr) {
+    /* Oferta definitiva: en cada simulación están disponibles TODOS los puestos del catálogo */
+    function makeSubset(ctx, outArr) {
         var k = 0, pi, j;
-        var stats25 = ctx.data.stats2025;
-
         for (pi = 0; pi < ctx.nProv; pi++) {
-            var take = Math.min(p.seats[pi] || 0, ctx.pools[pi].length);
-            if (take <= 0) continue;
-
-            if (p.escenario === 'calibrado2025' && stats25 && stats25.perProv && stats25.perProv[pi]) {
-                // Muestreo estratificado por Nivel E basado en histórico 2025
-                var ratios = stats25.perProv[pi].eRatios;
-                var eLevels = [6, 4, 3, 2];
-                var allocated = 0;
-                var used = {};
-
-                // Extraer de cada nivel E según la proporción 2025
-                for (var elIdx = 0; elIdx < eLevels.length; elIdx++) {
-                    var el = eLevels[elIdx];
-                    var targetCount = (elIdx === eLevels.length - 1) ? (take - allocated) : Math.round(take * (ratios[el] || 0));
-                    targetCount = Math.max(0, Math.min(targetCount, take - allocated));
-                    var elPool = ctx.poolsByE[pi][el].slice();
-                    var elTake = Math.min(targetCount, elPool.length);
-
-                    for (j = 0; j < elTake; j++) {
-                        var r = j + Math.floor(rng() * (elPool.length - j));
-                        var tmp = elPool[j]; elPool[j] = elPool[r]; elPool[r] = tmp;
-                        outArr[k++] = elPool[j];
-                        used[elPool[j]] = true;
-                        allocated++;
-                    }
-                }
-
-                // Si por redondeo o falta de plazas en algún nivel faltan puestos, rellenar del pool provincial
-                if (allocated < take) {
-                    var remainingPool = [];
-                    for (var rIdx = 0; rIdx < ctx.pools[pi].length; rIdx++) {
-                        var pid = ctx.pools[pi][rIdx];
-                        if (!used[pid]) remainingPool.push(pid);
-                    }
-                    var needed = take - allocated;
-                    for (j = 0; j < needed && j < remainingPool.length; j++) {
-                        var r2 = j + Math.floor(rng() * (remainingPool.length - j));
-                        var tmp2 = remainingPool[j]; remainingPool[j] = remainingPool[r2]; remainingPool[r2] = tmp2;
-                        outArr[k++] = remainingPool[j];
-                        allocated++;
-                    }
-                }
-            } else if (p.escenario === 'optimista') {
-                var pd = ctx.poolsDesc[pi];
-                for (j = 0; j < take; j++) outArr[k++] = pd[j];
-            } else if (p.escenario === 'pesimista') {
-                var pa = ctx.poolsAsc[pi];
-                for (j = 0; j < take; j++) outArr[k++] = pa[j];
-            } else {
-                // Aleatorio uniforme
-                var pool = ctx.pools[pi].slice();
-                for (j = 0; j < take; j++) {
-                    var r3 = j + Math.floor(rng() * (pool.length - j));
-                    var tmp3 = pool[j]; pool[j] = pool[r3]; pool[r3] = tmp3;
-                    outArr[k++] = pool[j];
-                }
-            }
+            var pool = ctx.pools[pi];
+            for (j = 0; j < pool.length; j++) outArr[k++] = pool[j];
         }
         return k;
     }
@@ -227,7 +157,7 @@ var NUCLEO = (function () {
     /* ---------- Una simulación completa ---------- */
     function simulateOnce(ctx, p, rng, acc) {
         var avail = acc._avail, U = acc._U, idxs = acc._idx, w = acc._w;
-        var nAvail = makeSubset(ctx, p, rng, avail);
+        var nAvail = makeSubset(ctx, avail);
         var userPos0 = Math.min(Math.max(1, p.userPos | 0), ctx.nCand) - 1;
         var remainingUser = 0, i, k, j;
         for (i = 0; i < nAvail; i++) if (ctx.provArr[avail[i]] === p.userProv) remainingUser++;

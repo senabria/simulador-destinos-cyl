@@ -13,23 +13,16 @@
     function fmtPct(x, dec) { return (x * 100).toFixed(dec === undefined ? 1 : dec).replace('.', ',') + ' %'; }
     function fmtNum(x) { try { return x.toLocaleString('es-ES'); } catch (e) { return String(x); } }
     function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+    /* La relación definitiva de puestos viene en CP850 (DOS); leída como windows-1252,
+       sus acentos aparecen como ¡ ¢ £ ¤ ¥ µ ‚ \xa0 — se transliteran antes de normalizar. */
+    var CP850_FIX = { '\xa0': 'a', '¡': 'i', '¢': 'o', '£': 'u', '¤': 'n', '¥': 'N', 'µ': 'A', '‚': 'e', '\ufffd': '' };
     function normJs(s) {
-        return String(s == null ? '' : s).trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return String(s == null ? '' : s)
+            .replace(/[\xa0¡¢£¤¥µ‚\ufffd]/g, function (c) { return CP850_FIX[c]; })
+            .trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     }
     function nextTick(fn) { if (typeof requestAnimationFrame === 'function') requestAnimationFrame(fn); else setTimeout(fn, 0); }
     function now() { return (window.performance && performance.now) ? performance.now() : Date.now(); }
-    /* Turno de agotamiento legible; el centinela nCand significa que la provincia no llegó a agotarse. */
-    function fmtExh(v, nCand) { return v >= nCand ? 'no se agota' : ('turno ' + v); }
-    /* Moda de un array ya ordenado; en caso de empate gana el turno más pequeño. */
-    function modaSorted(a) {
-        var moda = 0, best = 0, curV = null, curC = 0, j;
-        for (j = 0; j < a.length; j++) {
-            curC = (a[j] === curV) ? curC + 1 : 1;
-            curV = a[j];
-            if (curC > best) { best = curC; moda = curV; }
-        }
-        return moda;
-    }
 
     /* ---------------- estado ---------------- */
     var infWeights = [];
@@ -69,21 +62,8 @@
     }
 
     /* ---------------- parámetros ---------------- */
-    function escSel() {
-        var rads = document.getElementsByName('esc'), i;
-        for (i = 0; i < rads.length; i++) if (rads[i].checked) return rads[i].value;
-        return 'calibrado2025';
-    }
-    function setEsc(v) {
-        var rads = document.getElementsByName('esc'), i;
-        for (i = 0; i < rads.length; i++) rads[i].checked = (rads[i].value === v);
-    }
-
     function buildParams() {
-        var seats = [], i;
-        for (i = 0; i < DATA.provs.length; i++) seats.push(Math.max(0, parseInt($('seat-' + i).value, 10) || 0));
         return {
-            seats: seats,
             wBase: [+$('w-0').value, +$('w-1').value, +$('w-2').value, +$('w-3').value, +$('w-4').value],
             utilSal: [+$('u-e2').value, +$('u-e3').value, +$('u-e4').value, +$('u-e6').value],
             utilMun: [+$('u-cap').value, +$('u-com').value],
@@ -96,7 +76,6 @@
             renuncias: +$('inRen').value,
             conc: +$('inConc').value,
             temp: +$('inTemp').value,
-            escenario: escSel(),
             turnoM: $('selTurnoM').value,
             userPos: clamp(parseInt($('inPos').value, 10) || 1, 1, DATA.aprobados.length),
             userProv: +$('selProv').value,
@@ -163,9 +142,7 @@
             .sort(function (a, b) { return a - b; });
         var med = arr.length ? arr[Math.floor(arr.length / 2)] : 0;
         var p95 = arr.length ? arr[Math.min(arr.length - 1, Math.floor(arr.length * 0.95))] : 0;
-        var moda = modaSorted(arr);
-        $('kpiExh').innerHTML = 'mediana: ' + fmtExh(med, ctx.nCand) +
-            '<br>moda: ' + fmtExh(moda, ctx.nCand);
+        $('kpiExh').textContent = 'mediana turno ' + med;
         var e3 = acc.eCount[1] + acc.eCount[2] + acc.eCount[3];
         $('kpiE3').textContent = got > 0 ? fmtPct(e3 / got) : '—';
 
@@ -203,13 +180,12 @@
                 esc(DATA.descrs[q[5]]) + '</td>';
             tb.appendChild(tr);
         }
-        $('resSummary').textContent = 'Resultado sobre ' + fmtNum(n) + ' simulaciones · escenario «' +
-            p.escenario + '» · semilla ' + p.seed + '.';
+        $('resSummary').textContent = 'Resultado sobre ' + fmtNum(n) + ' simulaciones · semilla ' + p.seed + '.';
 
         // Guardar para comparador / exportador
         lastResult = {
             n: n, p: p, P: P, ci: ci, Pprov: Pprov, ciProv: ciProv,
-            rem: acc.remAtUser / n, med: med, moda: moda, p95: p95, nCand: ctx.nCand,
+            rem: acc.remAtUser / n, med: med, p95: p95,
             e3Ratio: got > 0 ? (e3 / got) : 0, ssccRatio: ssccRatio, ys: ys,
             eCounts: acc.eCount.slice(), munCounts: acc.munCount.slice()
         };
@@ -220,7 +196,7 @@
         if (!lastResult) { alert('Ejecuta primero una simulación para guardarla.'); return; }
         var sc = {
             slot: slot,
-            name: 'Turno ' + lastResult.p.userPos + ' (' + DATA.provsDisplay[lastResult.p.userProv] + ') - ' + lastResult.p.escenario,
+            name: 'Turno ' + lastResult.p.userPos + ' (' + DATA.provsDisplay[lastResult.p.userProv] + ')',
             time: (new Date()).toLocaleTimeString(),
             res: lastResult
         };
@@ -255,20 +231,12 @@
         var rA = scenarioA ? scenarioA.res : null;
         var rB = scenarioB ? scenarioB.res : null;
 
-        function exhCell(r) {
-            if (!r) return null;
-            var lim = r.nCand || Infinity;
-            var f = function (v) { return v == null ? '—' : fmtExh(v, lim); };
-            return f(r.med) + ' / ' + (r.moda != null ? f(r.moda) : '—') + ' / ' + f(r.p95);
-        }
-
         t += row('P(plaza en tu 1ª provincia)', rA ? ('<b>' + fmtPct(rA.Pprov != null ? rA.Pprov : rA.P) + '</b>') : null, rB ? ('<b>' + fmtPct(rB.Pprov != null ? rB.Pprov : rB.P) + '</b>') : null);
         t += row('Intervalo Confianza 95% (1ª provincia)', rA ? (fmtPct(rA.ciProv ? rA.ciProv[0] : rA.ci[0]) + ' – ' + fmtPct(rA.ciProv ? rA.ciProv[1] : rA.ci[1])) : null, rB ? (fmtPct(rB.ciProv ? rB.ciProv[0] : rB.ci[0]) + ' – ' + fmtPct(rB.ciProv ? rB.ciProv[1] : rB.ci[1])) : null);
         t += row('Plazas restantes medias', rA ? rA.rem.toFixed(1) : null, rB ? rB.rem.toFixed(1) : null);
-        t += row('Agotamiento (mediana / moda / peor 5%)', exhCell(rA), exhCell(rB));
+        t += row('Agotamiento (mediana / peor 5%)', rA ? ('Turno ' + rA.med + ' / ' + rA.p95) : null, rB ? ('Turno ' + rB.med + ' / ' + rB.p95) : null);
         t += row('P(E ≥ 03 | plaza)', rA ? fmtPct(rA.e3Ratio) : null, rB ? fmtPct(rB.e3Ratio) : null);
         t += row('P(SSCC | plaza)', rA ? fmtPct(rA.ssccRatio) : null, rB ? fmtPct(rB.ssccRatio) : null);
-        t += row('Escenario de oferta', rA ? rA.p.escenario : null, rB ? rB.p.escenario : null);
         t += row('Fidelidad / Renuncias', rA ? (Math.round(rA.p.fidelidad * 100) + '% / ' + Math.round(rA.p.renuncias * 100) + '%') : null,
             rB ? (Math.round(rB.p.fidelidad * 100) + '% / ' + Math.round(rB.p.renuncias * 100) + '%') : null);
 
@@ -301,18 +269,14 @@
         lines.push('1a Provincia preferida;' + DATA.provsDisplay[p.userProv]);
         lines.push('2a Provincia preferida;' + (p.userProv2 >= 0 ? DATA.provsDisplay[p.userProv2] : 'Por cercanía'));
         lines.push('Simulaciones;' + r.n);
-        lines.push('Escenario;' + p.escenario);
         lines.push('Fidelidad;' + p.fidelidad);
         lines.push('Renuncias;' + p.renuncias);
         lines.push('Probabilidad plaza en 1a provincia;' + ((r.Pprov != null ? r.Pprov : r.P) * 100).toFixed(2) + '%');
         lines.push('IC 95 min;' + ((r.ciProv ? r.ciProv[0] : r.ci[0]) * 100).toFixed(2) + '%');
         lines.push('IC 95 max;' + ((r.ciProv ? r.ciProv[1] : r.ci[1]) * 100).toFixed(2) + '%');
         lines.push('Plazas restantes media;' + r.rem.toFixed(2));
-        function exhCsv(v, lim) { return (v == null || v >= lim) ? 'No se agota' : v; }
-        var limExh = r.nCand || Infinity;
-        lines.push('Turno agotamiento mediana;' + exhCsv(r.med, limExh));
-        lines.push('Turno agotamiento moda;' + exhCsv(r.moda, limExh));
-        lines.push('Turno agotamiento peor 5%;' + exhCsv(r.p95, limExh));
+        lines.push('Turno agotamiento mediana;' + r.med);
+        lines.push('Turno agotamiento peor 5%;' + r.p95);
         lines.push('P(E>=03);' + (r.e3Ratio * 100).toFixed(2) + '%');
         lines.push('P(SSCC);' + (r.ssccRatio * 100).toFixed(2) + '%');
         lines.push('');
@@ -344,7 +308,6 @@
             { label: 'Peso horario ±50 %', apply: function (p, s) { W(p, 3, 1 + 0.5 * s); } },
             { label: 'Peso funciones ±50 %', apply: function (p, s) { W(p, 4, 1 + 0.5 * s); } },
             { label: 'Homogeneidad ×0,5 / ×2', apply: function (p, s) { p.conc = clamp(s > 0 ? p.conc * 2 : p.conc / 2, 1, 500); } },
-            { label: 'Escenario optimista / pesimista', apply: function (p, s) { p.escenario = s > 0 ? 'optimista' : 'pesimista'; } },
             { label: 'Turno M solo E02 / excluidos', apply: function (p, s) { p.turnoM = s > 0 ? 'soloE02' : 'excluidos'; } }
         ];
     }
@@ -409,26 +372,6 @@
         t += '<tr class="totrow"><td>Total</td><td>' + tot[6] + '</td><td>' + tot[4] + '</td><td>' + tot[3] +
             '</td><td>' + tot[2] + '</td><td>' + tot.sscc + '</td><td>' + tot.t + '</td></tr></table>';
         $('catalogDiv').innerHTML = t;
-        refreshDeficits(per);
-    }
-
-    function refreshDeficits(per) {
-        var warns = [], i;
-        for (i = 0; i < DATA.provs.length; i++) {
-            var s = parseInt($('seat-' + i).value, 10) || 0;
-            if (s > per[i].total) warns.push(DATA.provsDisplay[i] + ': ' + s + ' plazas > ' + per[i].total +
-                ' puestos en el catálogo (solo se ofertarán ' + per[i].total + ')');
-        }
-        $('deficitWarn').innerHTML = warns.length ? '<div class="warn">⚠ ' + warns.join('<br>⚠ ') + '</div>' : '';
-    }
-
-    function refreshSeatsTotal() {
-        var t = 0, i;
-        for (i = 0; i < DATA.provs.length; i++) t += parseInt($('seat-' + i).value, 10) || 0;
-        $('seatsTotal').textContent = fmtNum(t);
-        var b = $('seatsBadge');
-        if (t === DATA.aprobados.length) { b.textContent = '🟢 ' + t; b.style.color = '#16a34a'; }
-        else { b.textContent = '🔴 ' + t + ' (≠ ' + DATA.aprobados.length + ')'; b.style.color = '#dc2626'; }
     }
 
     function refreshCtxInfo() {
@@ -465,8 +408,8 @@
     function refreshDataInfo() {
         var mCount = 0;
         for (var i = 0; i < DATA.aprobados.length; i++) if (DATA.aprobados[i][2]) mCount++;
-        $('dataInfo').innerHTML = 'Catálogo: <b>' + fmtNum(DATA.puestos.length) + '</b> puestos · Aprobados: <b>' +
-            DATA.aprobados.length + '</b> (Turno M: ' + mCount + ') · Histórico 2025: <b>380</b> plazas.';
+        $('dataInfo').innerHTML = 'Catálogo definitivo: <b>' + fmtNum(DATA.puestos.length) + '</b> puestos · Aprobados: <b>' +
+            DATA.aprobados.length + '</b> (Turno M: ' + mCount + ').';
     }
 
     /* ---------------- inicialización de controles ---------------- */
@@ -492,26 +435,6 @@
                 sProv2.appendChild(opt2);
             }
             sProv2.addEventListener('change', refreshCtxInfo);
-        }
-
-        var sg = $('seatsGrid');
-        sg.innerHTML = '';
-        for (var j = 0; j < DATA.provs.length; j++) {
-            var div = document.createElement('div');
-            div.className = 'seatrow';
-            div.innerHTML = '<label>' + DATA.provsDisplay[j] + '</label><input type="number" id="seat-' +
-                j + '" min="0" max="500" step="1" value="' + (DATA.seats2025 ? DATA.seats2025[j] : DATA.seatsRPT[j]) + '">';
-            sg.appendChild(div);
-        }
-
-        // Eventos
-        for (var k = 0; k < DATA.provs.length; k++) {
-            (function (idx) {
-                $('seat-' + idx).addEventListener('input', function () {
-                    refreshSeatsTotal();
-                    refreshDeficits(poolCounts());
-                });
-            })(k);
         }
 
         for (var wIdx = 0; wIdx < 5; wIdx++) {
@@ -540,38 +463,6 @@
         $('pw-prov').addEventListener('click', function () { setW([100, 0, 0, 0, 0]); });
         $('pw-sal').addEventListener('click', function () { setW([0, 100, 0, 0, 0]); });
         $('pw-provsal').addEventListener('click', function () { setW([60, 40, 0, 0, 0]); });
-
-        // Presets de plazas
-        $('presetRPT').addEventListener('click', function () {
-            for (var p = 0; p < DATA.provs.length; p++) $('seat-' + p).value = DATA.seatsRPT[p] || 0;
-            refreshSeatsTotal(); refreshDeficits(poolCounts());
-        });
-        if ($('preset2025')) {
-            $('preset2025').addEventListener('click', function () {
-                var s25 = DATA.seats2025 || [126, 38, 37, 30, 28, 28, 33, 24, 18];
-                for (var p = 0; p < DATA.provs.length; p++) $('seat-' + p).value = s25[p] || 0;
-                refreshSeatsTotal(); refreshDeficits(poolCounts());
-            });
-        }
-        $('presetCat').addEventListener('click', function () {
-            var per = poolCounts(), tot = DATA.puestos.length, target = DATA.aprobados.length;
-            var acc = 0;
-            for (var p = 0; p < DATA.provs.length; p++) {
-                var s = (p === DATA.provs.length - 1) ? (target - acc) : Math.round(target * per[p].total / tot);
-                $('seat-' + p).value = Math.max(0, s);
-                acc += s;
-            }
-            refreshSeatsTotal(); refreshDeficits(poolCounts());
-        });
-        $('presetApro').addEventListener('click', function () {
-            var w = infWeightsFromData(), target = DATA.aprobados.length, acc = 0;
-            for (var p = 0; p < DATA.provs.length; p++) {
-                var s = (p === DATA.provs.length - 1) ? (target - acc) : Math.round(target * w[p]);
-                $('seat-' + p).value = Math.max(0, s);
-                acc += s;
-            }
-            refreshSeatsTotal(); refreshDeficits(poolCounts());
-        });
 
         // Botones principales
         $('btnRun').addEventListener('click', ejecutar);
@@ -646,9 +537,6 @@
         $('inFid').value = 0.9;
         $('inRen').value = 0.03;
         $('selTurnoM').value = 'igual';
-        setEsc('calibrado2025');
-        var s25 = DATA.seats2025 || [126, 38, 37, 30, 28, 28, 33, 24, 18];
-        for (var i = 0; i < DATA.provs.length; i++) $('seat-' + i).value = s25[i] || 0;
         refreshAll();
     }
 
@@ -660,7 +548,6 @@
         $('vFid').textContent = Math.round($('inFid').value * 100) + ' %';
         $('vRen').textContent = Math.round($('inRen').value * 100) + ' %';
         if ($('u-sscc') && $('vu-sscc')) $('vu-sscc').textContent = (+$('u-sscc').value).toFixed(2).replace('.', ',');
-        refreshSeatsTotal();
         refreshCatalog();
         refreshCtxInfo();
         refreshFidNote();
@@ -706,34 +593,40 @@
     }
 
     function rebuildPuestos(rows) {
+        /* Formato definitivo: Código Puesto;Puesto Ofertado;Grupo;Nivel;ESP;PRV;Adm.;
+           Cuerpo/Escala;Localidad;Prov.;Requisitos;Características;Código Unidad;
+           Unidad Orgánica;Jerarquía Orgánica;Página PDF  (localización por NOMBRE de cabecera) */
         var head = rows[0].map(normJs);
-        var iCons = colIdx(head, ['COMPLEMENTO']), iProv = colIdx(head, ['PROVINCIA']),
-            iMun = colIdx(head, ['MUNICIPIO']), iLoc = colIdx(head, ['LOCALIDAD']),
-            iFun = colIdx(head, ['FUNCION']), iTipo = colIdx(head, ['PUESTO', 'TIPO']),
-            iNombre = colIdx(head, ['NOMBRE']), iDescr = colIdx(head, ['DESCR']), iConsj = colIdx(head, ['CONSEJER']);
-        if ([iCons, iProv, iMun, iLoc, iFun, iTipo, iNombre, iDescr, iConsj].indexOf(-1) >= 0) return null;
-        var uas = [];
-        head.forEach(function (h, i) { if (h.indexOf('UNIDAD') >= 0) uas.push(i); });
+        var iEsp = colIdx(head, ['ESP']), iProv = colIdx(head, ['PROV.']),
+            iLoc = colIdx(head, ['LOCALIDAD']), iReq = colIdx(head, ['REQUISITOS']),
+            iNombre = colIdx(head, ['PUESTO OFERTADO']), iUnidad = colIdx(head, ['UNIDAD ORGANICA']),
+            iJerar = colIdx(head, ['JERARQUIA']);
+        var ine = {
+            '47': 'VALLADOLID', '24': 'LEON', '09': 'BURGOS', '37': 'SALAMANCA',
+            '40': 'SEGOVIA', '49': 'ZAMORA', '05': 'AVILA', '34': 'PALENCIA', '42': 'SORIA'
+        };
+        if ([iEsp, iProv, iLoc, iReq, iNombre, iUnidad, iJerar].indexOf(-1) >= 0) return null;
         var muns = [], munCap = [], munMap = {}, descrs = [], descrMap = {},
             conss = [], consMap = {}, tipos = [], tipoMap = {}, posts = [], skipped = 0;
         for (var r = 1; r < rows.length; r++) {
             var row = rows[r];
             if (!row || row.join('').trim() === '') continue;
-            var provN = normJs(row[iProv]);
-            var pi = DATA.provs.indexOf(provN);
+            var provN = ine[(row[iProv] || '').trim()];
+            var pi = provN ? DATA.provs.indexOf(provN) : -1;
             if (pi < 0) { skipped++; continue; }
-            var e = parseE(row[iCons]);
-            var mun = (row[iMun] || '').trim() || (row[iLoc] || '').trim() || provN;
-            var loc = (row[iLoc] || '').trim() || mun;
-            var fun = normJs(row[iFun]);
-            var tipo = (row[iTipo] || '').trim().toUpperCase();
+            var e = parseE(row[iEsp]);
+            var mun = (row[iLoc] || '').trim() || provN;
+            var loc = mun;
+            var fun = normJs(row[iReq] || '');
+            var mFca = /FCA\s*(\d{3})/.exec(fun);
+            var tipo = mFca ? ('CA' + mFca[1]) : '';
             var nombre = (row[iNombre] || '').trim();
-            var descr = (row[iDescr] || '').trim() || nombre;
-            var consj = (row[iConsj] || '').trim();
-            var texto = normJs(nombre + ' ' + descr + ' ' + mun + ' ' + loc);
-            uas.slice(0, 2).forEach(function (ui) { if (ui < row.length) texto += ' ' + normJs(row[ui]); });
-            var trab = texto.indexOf('RESIDENC') >= 0 ? 2 : ((tipo === 'CA033' || fun.indexOf('IRC000') >= 0) ? 1 : 0);
-            var hor = fun.indexOf('64300') >= 0 ? 1 : 0;
+            var descr = (row[iUnidad] || '').trim() || nombre;
+            var jerar = (row[iJerar] || '').trim();
+            var consj = jerar.split('>')[0].trim();
+            var texto = normJs(nombre + ' ' + descr + ' ' + mun + ' ' + loc) + ' ' + fun + ' ' + normJs(jerar);
+            var trab = texto.indexOf('RESIDENC') >= 0 ? 2 : (tipo === 'CA033' ? 1 : 0);
+            var hor = fun.indexOf('HORARIO ESPECIAL') >= 0 ? 1 : 0;
             var isTerr = texto.indexOf('DELEGACION TERRITORIAL') >= 0 || texto.indexOf('SERVICIO TERRITORIAL') >= 0 ||
                 texto.indexOf('DIRECCION PROVINCIAL') >= 0 || texto.indexOf('OFICINA') >= 0 || texto.indexOf('GERENCIA TERRITORIAL') >= 0 ||
                 texto.indexOf('IES ') >= 0 || texto.indexOf('CEIP ') >= 0 || texto.indexOf('CENTRO ') >= 0 || texto.indexOf('RESIDENCIA ') >= 0;
@@ -842,10 +735,6 @@
             if (cfg.fidelidad != null) $('inFid').value = cfg.fidelidad;
             if (cfg.renuncias != null) $('inRen').value = cfg.renuncias;
             if (cfg.turnoM) $('selTurnoM').value = cfg.turnoM;
-            if (cfg.escenario) setEsc(cfg.escenario);
-            if (cfg.seats) {
-                for (var j = 0; j < DATA.provs.length && j < cfg.seats.length; j++) $('seat-' + j).value = cfg.seats[j];
-            }
         } catch (e) { }
     }
 

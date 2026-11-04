@@ -66,19 +66,10 @@ reg('inConc', 30); reg('inTemp', 0.1); reg('inFid', 0.9); reg('inRen', 0.03);
 reg('u-e6', 1); reg('u-e4', 0.66); reg('u-e3', 0.33); reg('u-e2', 0);
 reg('u-cap', 1); reg('u-com', 0.4); reg('u-hor', 0.5);
 reg('u-int', 1); reg('u-ate', 0.5); reg('u-res', 0.2); reg('u-sscc', 0.5);
-var seats2025 = [126, 38, 37, 30, 28, 28, 33, 24, 18];
-for (var s = 0; s < 9; s++) reg('seat-' + s, seats2025[s]);
 reg('inT', 400);
 reg('chartTornado', '', { clientHeight: 360 });
 reg('chartCurve', '', { clientHeight: 260 });
 reg('progWrap', '', { style: { display: 'none' } });
-
-var escRadios = [
-    { value: 'calibrado2025', checked: true },
-    { value: 'aleatorio', checked: false },
-    { value: 'optimista', checked: false },
-    { value: 'pesimista', checked: false }
-];
 
 var alerts = [];
 global.window = global;                     // window.X === global.X
@@ -86,7 +77,7 @@ global.document = {
     readyState: 'complete',
     body: makeEl('body'),
     getElementById: function (id) { return registry[id] || (registry[id] = makeEl(id)); },
-    getElementsByName: function (n) { return n === 'esc' ? escRadios : []; },
+    getElementsByName: function () { return []; },
     createElement: function () { return makeEl('_dyn'); },
     addEventListener: function () { }
 };
@@ -177,7 +168,7 @@ async function escenarioA() {
     await waitFor(function () { return !$('btnTornado').disabled && $('tornadoNote').textContent !== ''; }, 180000, 'tornado A');
 
     var t = tornadoCalls[tornadoCalls.length - 1];
-    check('A4: el tornado se calcula y dibuja (19 trabajos, 9 factores)', !!t && t.rows.length === 9,
+    check('A4: el tornado se calcula y dibuja (17 trabajos, 8 factores)', !!t && t.rows.length === 8,
         t ? ('filas=' + t.rows.length + ', baseline=' + (t.baseline * 100).toFixed(1) + '%') : 'sin dibujo');
     if (t) {
         var todo1 = t.rows.every(function (r) { return r.lo > 0.999 && r.hi > 0.999 && t.baseline > 0.999; });
@@ -213,7 +204,7 @@ async function escenarioB() {
     await waitFor(function () { return !$('btnTornado').disabled && $('tornadoNote').textContent !== ''; }, 180000, 'tornado B');
 
     var t = tornadoCalls[tornadoCalls.length - 1];
-    check('B2: tornado dibujado con 9 factores', !!t && t.rows.length === 9,
+    check('B2: tornado dibujado con 8 factores', !!t && t.rows.length === 8,
         t ? 'baseline=' + (t.baseline * 100).toFixed(1) + '%' : 'sin dibujo');
     if (t) {
         var spread = Math.max.apply(null, t.rows.map(function (r) { return Math.abs(r.hi - r.lo); }));

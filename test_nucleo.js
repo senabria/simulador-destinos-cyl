@@ -11,10 +11,10 @@ function infW() {
 }
 function defParams(over) {
     var p = {
-        seats: (DATA.seats2025 || DATA.seatsRPT).slice(), wBase: [40, 25, 15, 10, 10],
+        wBase: [40, 25, 15, 10, 10],
         utilSal: [0, 0.33, 0.66, 1], utilMun: [1, 0.4], utilHor: 0.5, utilFun: [1, 0.5, 0.2], utilSSCC: 0.5,
         fidelidad: 0.8, pesosInfidelidad: infW(), usarProximidad: true, renuncias: 0.15, conc: 30, temp: 0.1,
-        escenario: 'calibrado2025', turnoM: 'igual',
+        turnoM: 'igual',
         userPos: 118, userProv: DATA.provs.indexOf('ZAMORA'),
         aceptaOtras: false, seed: 42, earlyStop: false
     };
@@ -28,11 +28,6 @@ function runSims(p, n) {
     for (var i = 0; i < n; i++) NUCLEO.simulateOnce(ctx, p, rng, acc);
     return { ctx: ctx, acc: acc };
 }
-function meanE(acc) {
-    var s = acc.eCount[0] * 2 + acc.eCount[1] * 3 + acc.eCount[2] * 4 + acc.eCount[3] * 6;
-    var n = acc.eCount[0] + acc.eCount[1] + acc.eCount[2] + acc.eCount[3];
-    return n ? s / n : 0;
-}
 
 var fails = 0, checks = 0;
 function check(name, cond) {
@@ -44,14 +39,14 @@ function check(name, cond) {
 /* 1. Integridad de datos y contexto */
 var p0 = defParams();
 var ctx0 = NUCLEO.buildCtx(DATA, p0);
-var expTotal = 0;
-for (var i = 0; i < ctx0.nProv; i++) expTotal += Math.min(p0.seats[i], ctx0.pools[i].length);
-check('totalPosts = sum(min(plazas,pool)) = ' + ctx0.totalPosts, ctx0.totalPosts === expTotal);
+check('totalPosts = todos los puestos del catálogo (' + ctx0.totalPosts + ')', ctx0.totalPosts === DATA.puestos.length);
 check('362 aprobados', DATA.aprobados.length === 362);
 check('Turno M = 11', DATA.aprobados.filter(function (a) { return a[2] === 1; }).length === 11);
-check('E06 globales = 55', DATA.puestos.filter(function (q) { return q[1] === 6; }).length === 55);
-check('pool Zamora = 130', ctx0.pools[DATA.provs.indexOf('ZAMORA')].length === 130);
-check('Histórico 2025 cargado con 380 plazas', DATA.stats2025 && DATA.stats2025.total === 380);
+check('362 puestos en el catálogo definitivo', DATA.puestos.length === 362);
+check('E06 globales = 15', DATA.puestos.filter(function (q) { return q[1] === 6; }).length === 15);
+check('pool Zamora = 24', ctx0.pools[DATA.provs.indexOf('ZAMORA')].length === 24);
+check('todos los puestos disponibles en cada simulación',
+    NUCLEO.makeSubset(ctx0, new Int32Array(ctx0.n)) === ctx0.n);
 
 /* 2. Determinismo con la misma semilla */
 var r1 = runSims(defParams(), 40), r2 = runSims(defParams(), 40);
@@ -59,7 +54,7 @@ check('determinismo (misma semilla, mismo resultado)',
     r1.acc.got === r2.acc.got && r1.acc.eCount.join() === r2.acc.eCount.join());
 
 /* 3. Solo provincia + fidelidad 1 + sin renuncias -> P ~ 1
-   (28 plazas de Zamora frente a 12 fieles por delante) */
+   (24 puestos de Zamora frente a los fieles por delante) */
 var r3 = runSims(defParams({ wBase: [100, 0, 0, 0, 0], fidelidad: 1, renuncias: 0, temp: 0 }), 200);
 check('solo provincia: P >= 99% (obtenido ' + (r3.acc.got / 200 * 100).toFixed(1) + '%)',
     r3.acc.got / 200 >= 0.99);
@@ -84,21 +79,10 @@ check('trabCount suma n', r5.acc.trabCount.reduce(function (a, b) { return a + b
 check('ssccCount suma n', r5.acc.ssccCount.reduce(function (a, b) { return a + b; }, 0) === n5);
 check('exhArr tiene una entrada por simulación', r5.acc.exhArr.length === n5);
 
-/* 6. Escenarios: optimista rinde niveles E más altos que pesimista */
-var rO = runSims(defParams({ escenario: 'optimista' }), 150);
-var rP = runSims(defParams({ escenario: 'pesimista' }), 150);
-check('E medio optimista (' + meanE(rO.acc).toFixed(2) + ') > pesimista (' + meanE(rP.acc).toFixed(2) + ')',
-    meanE(rO.acc) > meanE(rP.acc));
-
-/* 7. Escenario Calibrado 2025 se ejecuta correctamente */
-var r25 = runSims(defParams({ escenario: 'calibrado2025' }), 150);
-check('Escenario calibrado 2025 genera resultados válidos', r25.acc.got + r25.acc.sinPlaza === 150);
-
-/* 8. Sin plazas de la provincia -> siempre sin plaza */
-var seats0 = DATA.seatsRPT.slice();
-for (var k = 0; k < seats0.length; k++) seats0[k] = 0;
-var r7 = runSims(defParams({ seats: seats0 }), 50);
-check('0 plazas -> sin plaza en las 50 sims', r7.acc.sinPlaza === 50);
+/* 6. Las 9 provincias tienen puestos en el catálogo definitivo */
+var poolsOk = true;
+for (var pr = 0; pr < ctx0.nProv; pr++) if (ctx0.pools[pr].length === 0) poolsOk = false;
+check('las 9 provincias tienen puestos en el catálogo', poolsOk);
 
 /* 9. IC de Wilson razonable */
 var ci = NUCLEO.ciWilson(300, 400);
