@@ -34,10 +34,12 @@ El producto final es **[simulador.html](simulador.html)**: una web autocontenida
 ### Comandos
 
 ```bash
-python generar_web.py     # regenera simulador.html y datos.json desde los CSV
-node test_nucleo.js       # 22 pruebas del motor (datos, determinismo, límites…)
-node test_headless.js     # 9 comprobaciones de la interfaz con DOM simulado (KPIs y tornado)
-node verificar_web.js     # IDs, tokens, orden de scripts y velocidad
+python generar_datos_demo.py  # genera los CSV sintéticos de demo en datos_demo/
+python generar_web.py         # regenera simulador.html y datos.json desde los CSV reales
+python generar_web.py --demo  # regenera con los datos sintéticos de datos_demo/ (como en Pages)
+node test_nucleo.js           # 22 pruebas del motor (datos, determinismo, límites…)
+node test_headless.js         # 9 comprobaciones de la interfaz con DOM simulado (KPIs y tornado)
+node verificar_web.js         # IDs, tokens, orden de scripts y velocidad
 ```
 
 ---
