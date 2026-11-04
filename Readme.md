@@ -14,10 +14,13 @@ El producto final es **[simulador.html](simulador.html)**: una web autocontenida
 
 | Archivo | Qué es |
 |---|---|
-| [simulador.html](simulador.html) | **La aplicación final**. Datos embebidos + motor + interfaz. Doble clic y listo. |
-| [Aprobados.csv](Aprobados.csv) | Listado oficial: orden de mérito, turno L/M y provincia de examen de los 362 aprobados. |
-| [Relación posibles puestos.csv](Relación posibles puestos.csv) | **Catálogo definitivo**: los 362 puestos convocados con nivel ESP (E06–E02), localidad, provincia (código INE), requisitos y unidad orgánica. Codificación CP850. |
-| [generar_web.py](generar_web.py) | Generador: lee los CSV y ensambla `simulador.html` a partir de las piezas. |
+| [simulador.html](simulador.html) | **La aplicación final**. Datos embebidos + motor + interfaz. Doble clic y listo. *(no se versiona: contiene datos reales embebidos)* |
+| [Aprobados.csv](Aprobados.csv) | Listado oficial: orden de mérito, turno L/M y provincia de examen de los 362 aprobados. *(no se versiona)* |
+| [Relación posibles puestos.csv](Relación posibles puestos.csv) | **Catálogo definitivo**: los 362 puestos convocados con nivel ESP (E06–E02), localidad, provincia (código INE), requisitos y unidad orgánica. Codificación CP850. *(no se versiona)* |
+| [generar_web.py](generar_web.py) | Generador: lee los CSV y ensambla `simulador.html` a partir de las piezas (`--demo` para usar datos sintéticos). |
+| [generar_datos_demo.py](generar_datos_demo.py) | Generador del dataset sintético de demo en `datos_demo/` (mismas distribuciones agregadas, cero datos personales). |
+| [datos_demo/](datos_demo) | CSV sintéticos versionados que alimentan la demo pública de GitHub Pages. |
+| [.github/workflows/demo.yml](.github/workflows/demo.yml) | Workflow de CI: genera la demo sintética, ejecuta los tests y despliega GitHub Pages. |
 | [nucleo.js](nucleo.js) | Motor de simulación (JS puro, sin DOM) con matriz de proximidad física. |
 | [charts.js](charts.js) | Gráficas en canvas dibujadas a mano (barras, curva simple, curva comparativa doble, tornado). |
 | [app.js](app.js) | Lógica de la interfaz: paneles, ejecución por trozos, sensibilidad, comparador de escenarios y exportador. |
@@ -27,8 +30,6 @@ El producto final es **[simulador.html](simulador.html)**: una web autocontenida
 | [verificar_web.js](verificar_web.js) | Verificación estructural del HTML generado + benchmark de rendimiento. |
 | [datos.json](datos.json) | Volcado de los datos embebidos, usado por las pruebas. |
 | [Monte Carlo.py](Monte Carlo.py) | Análisis simple independiente (replica el reparto definitivo por provincia). |
-
-> ℹ️ `2025.csv` ya **no se usa**: el catálogo es la oferta definitiva, no hay recorte ni muestreo de subconjuntos.
 
 ### Comandos
 
@@ -80,7 +81,18 @@ node verificar_web.js     # IDs, tokens, orden de scripts y velocidad
 
 ---
 
-## 4. El modelo de simulación
+## 4. Demo pública en GitHub Pages
+
+El repo **no versiona datos reales**: la URL **senabria.github.io/simulador-destinos-cyl** sirve una **demo con datos 100 % sintéticos** (`datos_demo/`), regenerada automáticamente en cada push por el workflow [`.github/workflows/demo.yml`](.github/workflows/demo.yml):
+
+1. `python generar_datos_demo.py` → CSV sintéticos: 362 aprobados y los 362 puestos definitivos con las mismas distribuciones agregadas que la convocatoria real (niveles E, A5, SSCC).
+2. `python generar_web.py --demo` → genera `simulador.html` con esos datos sintéticos.
+3. `node test_nucleo.js` + `node test_headless.js` + `node verificar_web.js` → batería completa de pruebas.
+4. Publica `simulador.html` como `index.html` en GitHub Pages.
+
+---
+
+## 5. El modelo de simulación
 
 ```mermaid
 flowchart TD
@@ -98,7 +110,7 @@ flowchart TD
 
 ---
 
-## 5. Verificación realizada
+## 6. Verificación realizada
 
 - **Pruebas unitarias**: `node test_nucleo.js` → **22/22 PASS** (integridad 362/362, determinismo, monotonía, distribuciones, Wilson, SSCC, proximidad).
 - **Interfaz headless**: `node test_headless.js` → **9/9 PASS** (turno 362 + Salamanca: P(1ª provincia) = 0 %, coherente con la curva; turno 100 + Zamora: 100 %).

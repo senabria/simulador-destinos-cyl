@@ -15,15 +15,20 @@ Escribe:
   - simulador.html -> web autocontenida (offline, doble clic)
   - datos.json     -> datos para las pruebas de Node
 
-El catálogo es la oferta definitiva: no hay recorte 1600->362, ni muestreo de
-subconjuntos, ni escenarios calibrados con el histórico de 2025.
+El catálogo es la oferta definitiva: no hay recorte, ni muestreo de subconjuntos,
+ni escenarios calibrados con el histórico de 2025.
 
-Uso:  python generar_web.py
+Uso:
+  python generar_web.py           -> web con los datos reales
+  python generar_web.py --demo    -> web con los datos sintéticos de datos_demo/
+                                     (misma distribuciones agregadas, sin datos personales;
+                                      usado por el workflow de GitHub Pages)
 """
 
 import csv
 import json
 import math
+import os
 import re
 import sys
 import unicodedata
@@ -234,8 +239,10 @@ def verify(p, a):
 
 
 def main():
-    p = parse_puestos(PUESTOS_CSV)
-    a = parse_aprobados(APROBADOS_CSV)
+    demo = "--demo" in sys.argv
+    base = os.path.join("datos_demo") if demo else ""
+    p = parse_puestos(os.path.join(base, PUESTOS_CSV))
+    a = parse_aprobados(os.path.join(base, APROBADOS_CSV))
     ok = verify(p, a)
     if not ok:
         print("ADVERTENCIA: el recuento no coincide con el esperado; revisa los CSV.")

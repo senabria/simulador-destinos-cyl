@@ -2,12 +2,19 @@
 """
 Generador de DATOS SINTÉTICOS de demostración (100 % ficticios, sin datos personales).
 
-Produce en datos_demo/ tres CSV con el MISMO formato que los ficheros reales
-(Aprobados.csv, Relación posibles puestos.csv, 2025.csv) y con las mismas
-distribuciones AGREGADAS (nº de aprobados por provincia, turno M, puestos por
-provincia y nivel E, SSCC de Valladolid, plazas del histórico 2025), de modo que
-el pipeline completo (generar_web.py, tests, demo) funciona igual que con los
-datos reales… sin contener ni un solo dato personal.
+Produce en datos_demo/ dos CSV con el MISMO formato que los ficheros reales:
+  - Aprobados.csv                  -> formato oficial (cp1252)
+  - Relación posibles puestos.csv  -> formato DEFINITIVO de la Resolución (cp850),
+     16 columnas: Código Puesto;Puesto Ofertado;Grupo;Nivel;ESP;PRV;Adm.;
+     Cuerpo/Escala;Localidad;Prov.;Requisitos;Características;Código Unidad;
+     Unidad Orgánica;Jerarquía Orgánica;Página PDF
+
+Y con las mismas distribuciones AGREGADAS del catálogo definitivo (362 puestos:
+VLL 103 / LEÓN 45 / BURGOS 39 / SAL 31 / SEGOVIA 32 / ZAMORA 24 / ÁVILA 31 /
+PALENCIA 33 / SORIA 24; E06=15, E04=19, E03=30, E02=298 —incluidas las celdas
+ESP vacías—, más 31 puestos "Otros Cuerpos Similares" A5), de modo que el
+pipeline completo (generar_web.py --demo, tests, demo en GitHub Pages) funciona
+igual que con los datos reales… sin contener ni un solo dato personal.
 
 Los nombres son deliberadamente ficticios ("DEMO 001, OPOSITOR/A").
 Semilla fija => salida reproducible.
@@ -26,85 +33,72 @@ PROVS = ["VALLADOLID", "LEON", "BURGOS", "SALAMANCA", "SEGOVIA",
          "ZAMORA", "AVILA", "PALENCIA", "SORIA"]
 PROVS_CAP = ["Valladolid", "León", "Burgos", "Salamanca", "Segovia",
              "Zamora", "Ávila", "Palencia", "Soria"]
+INE = ["47", "24", "09", "37", "40", "49", "05", "34", "42"]
 
 # ---- Distribuciones agregadas replicadas de la convocatoria real ----
 
 # Aprobados por provincia (índice = PROVS). Total 362.
-APROB_POR_PROV = [118, 47, 37, 62, 20, 30, 13, 21, 14]
+APROB_POR_PROV = [118, 47, 37, 62, 21, 30, 13, 21, 13]
 # Posiciones (1-based) de los 11 aprobados de turno M.
 M_POS = {41, 59, 65, 108, 156, 260, 358, 359, 360, 361, 362}
 
-# Catálogo por provincia: (E06, E04, E03, E02). Totales 55/88/143/1350 = 1636.
+# Catálogo DEFINITIVO por provincia: (E06, E04, E03, E02). Total 362.
+# Las celdas E02 se generan con ESP vacío (el parseador las cuenta como E02).
 PUESTOS_POR_PROV = [
-    (6, 5, 38, 377),    # Valladolid -> 426 (279 de ellos SSCC)
-    (8, 13, 18, 196),   # León      -> 235
-    (9, 11, 12, 159),   # Burgos    -> 191
-    (10, 11, 17, 142),  # Salamanca -> 180
-    (3, 9, 11, 107),    # Segovia   -> 130
-    (3, 18, 11, 98),    # Zamora    -> 130
-    (6, 9, 15, 84),     # Ávila     -> 114
-    (5, 7, 10, 96),     # Palencia  -> 118
-    (5, 5, 11, 91),     # Soria     -> 112
+    (2, 1, 12, 88),   # Valladolid -> 103
+    (1, 0, 3, 41),    # León       -> 45
+    (3, 4, 0, 32),    # Burgos     -> 39
+    (2, 3, 3, 23),    # Salamanca  -> 31
+    (1, 4, 4, 23),    # Segovia    -> 32
+    (0, 1, 2, 21),    # Zamora     -> 24
+    (2, 3, 4, 22),    # Ávila      -> 31
+    (4, 1, 1, 27),    # Palencia   -> 33
+    (0, 2, 1, 21),    # Soria      -> 24
 ]
-SSCC_VALLADOLID = 279
-
-# Histórico 2025 por provincia: (E06, E04, E03, E02, n_sSCC, n_territorial).
-# Totales: 19/34/52/275 = 380 plazas.
-HIST2025 = [
-    (3, 4, 24, 102, 81, 52),  # Valladolid 133
-    (1, 3, 8, 28, 1, 39),     # León 40
-    (3, 5, 4, 27, 0, 39),     # Burgos 39
-    (2, 9, 3, 17, 0, 31),     # Salamanca 31
-    (3, 5, 3, 18, 0, 29),     # Segovia 29
-    (2, 2, 3, 22, 1, 28),     # Zamora 29
-    (2, 2, 4, 27, 1, 34),     # Ávila 35
-    (1, 2, 2, 20, 0, 25),     # Palencia 25
-    (2, 2, 1, 14, 1, 18),     # Soria 19
-]
+# Puestos "Otros Cuerpos Similares" (Adm. A5) por provincia. Total 31.
+A5_POR_PROV = [1, 2, 6, 4, 4, 5, 4, 3, 2]
+# Puestos de Servicios Centrales de Valladolid (sin keywords territoriales).
+SSCC_VALLADOLID = 14
 
 MUNICIPIOS = [
-    ["Valladolid", "Medina del Campo", "Laguna de Duero", "Arroyo de la Encomienda",
-     "Tudela de Duero", "Olmedo", "Peñafiel", "Tordesillas", "Cigales", "Villalón"],
-    ["León", "Ponferrada", "Astorga", "Villaquilambre", "San Andrés del Rabanedo",
+    ["Valladolid", "Medina del Campo", "Laguna de Duero", "Arroyo",
+     "Tudela de Duero", "Olmedo", "Peñafiel", "Tordesillas", "Cigales", "Arroyo"],
+    ["León", "Ponferrada", "Astorga", "Villaquilambre", "León",
      "La Bañeza", "Villablino", "Cistierna"],
-    ["Burgos", "Miranda de Ebro", "Aranda de Duero", "Briviesca", "Medina de Pomar",
+    ["Burgos", "Miranda de Ebro", "Aranda de Duero", "Briviesca", "Burgos",
      "Lerma", "Salas de los Infantes"],
-    ["Salamanca", "Ciudad Rodrigo", "Béjar", "Vitigudino", "Peñaranda de Bracamonte",
+    ["Salamanca", "Ciudad Rodrigo", "Béjar", "Vitigudino", "Salamanca",
      "Santa Marta de Tormes", "Alba de Tormes"],
-    ["Segovia", "Cuéllar", "Sepúlveda", "Riaza", "Cantalejo", "Palazuelos de Eresma"],
-    ["Zamora", "Benavente", "Toro", "Puebla de Sanabria", "Villalpando", "Fermoselle"],
-    ["Ávila", "Arévalo", "Arenas de San Pedro", "Sotillo de la Adrada", "Candeleda",
+    ["Segovia", "Cuéllar", "Sepúlveda", "Riaza", "Segovia",
+     "Palazuelos de Eresma"],
+    ["Zamora", "Benavente", "Toro", "Puebla de Sanabria", "Zamora",
+     "Fermoselle"],
+    ["Ávila", "Arévalo", "Ávila", "Sotillo de la Adrada", "Candeleda",
      "El Barco de Ávila"],
     ["Palencia", "Aguilar de Campoo", "Guardo", "Cervera de Pisuerga",
-     "Herrera de Pisuerga", "Carrión de los Condes"],
-    ["Soria", "Almazán", "El Burgo de Osma", "Medinaceli", "Ólvega", "Ágreda"],
+     "Palencia", "Carrión de los Condes"],
+    ["Soria", "Almazán", "El Burgo de Osma", "Medinaceli", "Soria", "Ágreda"],
 ]
 
 CONSEJERIAS = [
-    "ECONOMÍA Y HACIENDA",
-    "AGRICULTURA, GANADERÍA Y DESARROLLO RURAL",
+    "ECONOMIA Y HACIENDA",
+    "AGRICULTURA, GANADERIA Y DESARROLLO RURAL",
     "INDUSTRIA, COMERCIO Y EMPLEO",
-    "MOVILIDAD Y TRANSFORMACIÓN DIGITAL",
+    "MOVILIDAD Y TRANSFORMACION DIGITAL",
     "SANIDAD",
-    "EDUCACIÓN",
-    "FOMENTO Y MEDIO AMBIENTE",
-    "CULTURA Y TURISMO",
+    "EDUCACION",
+    "FAMILIA E IGUALDAD DE OPORTUNIDADES",
+    "CULTURA, TURISMO Y DEPORTE",
     "PRESIDENCIA",
 ]
 
-DIRECCIONES_GENERALES = [
-    "DIRECCIÓN GENERAL DE PRESUPUESTOS",
-    "DIRECCIÓN GENERAL DE FUNCIÓN PÚBLICA",
-    "DIRECCIÓN GENERAL DE TELECOMUNICACIONES",
-    "DIRECCIÓN GENERAL DE INDUSTRIA",
-    "DIRECCIÓN GENERAL DE AGRICULTURA Y GANADERÍA",
-    "DIRECCIÓN GENERAL DE COMERCIO",
-    "DIRECCIÓN GENERAL DE SALUD PÚBLICA",
-    "DIRECCIÓN GENERAL DE POLÍTICA TERRITORIAL",
-    "DIRECCIÓN GENERAL DE VIVIENDA",
-]
+# Cabecera EXACTA del formato definitivo (se escribe en cp850, como el real).
+CABECERA_PUESTOS = ["Código Puesto", "Puesto Ofertado", "Grupo", "Nivel", "ESP",
+                    "PRV", "Adm.", "Cuerpo/Escala", "Localidad", "Prov.",
+                    "Requisitos", "Características", "Código Unidad",
+                    "Unidad Orgánica", "Jerarquía Orgánica", "Página PDF"]
 
-COMP = {6: "E06", 4: "E04", 3: "E03", 2: ""}
+ESP_TXT = {6: "E06", 4: "E04", 3: "E03", 2: ""}
 
 
 def wpath(name):
@@ -117,8 +111,7 @@ def fmt_puntos(x):
 
 
 def write_aprobados(rng):
-    """Aprobados.csv sintético: 362 filas, provincias y turno M exactos."""
-    # Lista de provincias con los conteos exactos, barajada -> orden de mérito.
+    """Aprobados.csv sintético: 362 filas, provincias y turno M exactos (cp1252)."""
     provs = []
     for pi, n in enumerate(APROB_POR_PROV):
         provs.extend([pi] * n)
@@ -141,106 +134,62 @@ def write_aprobados(rng):
 
 
 def write_puestos(rng):
-    """Catálogo sintético: 1636 filas con conteos exactos por provincia/nivel.
-    En Valladolid, 279 puestos de Servicios Centrales y 147 territoriales."""
-    used_codes, rows = set(), []
-    codigos = set()
+    """Catálogo sintético al formato DEFINITIVO: 362 filas (cp850)."""
+    rows = []
     for pi, (e06, e04, e03, e02) in enumerate(PUESTOS_POR_PROV):
         niveles = [6] * e06 + [4] * e04 + [3] * e03 + [2] * e02
         rng.shuffle(niveles)
         n_sscc = SSCC_VALLADOLID if pi == 0 else 0
+        n_a5 = A5_POR_PROV[pi]
+        total_prov = len(niveles)
+
         for k, e in enumerate(niveles):
             sscc = pi == 0 and k < n_sscc
+            a5 = k >= (total_prov - n_a5)
+            adm = "A5" if a5 else "A1"
+            cuerpo = ("Otros Cuer Sim al Cuerpo Auxiliar C. Auxiliar" if a5
+                      else "C. Auxiliar")
             consj = rng.choice(CONSEJERIAS)
             if sscc:
-                ua1 = "SECRETARÍA GENERAL"
-                ua2 = rng.choice(DIRECCIONES_GENERALES)
+                uo = rng.choice(["SECRETARIA GENERAL", "SERVICIO DE PERSONAL",
+                                 "SERVICIO DE INSPECCION Y APOYO",
+                                 "DIRECCION GENERAL DE FUNCION PUBLICA"])
+                jerar = "CONSEJERIA DE %s > SECRETARIA GENERAL > %s" % (consj, uo)
             else:
-                ua1 = "SECRETARÍA GENERAL"
-                ua2 = "SERVICIO TERRITORIAL DE %s EN %s" % (
-                    consj.split(",")[0].title(), PROVS_CAP[pi].upper())
-            descr = ua2
+                uo = "SERVICIO TERRITORIAL DE %s DE %s" % (
+                    consj.title(), PROVS_CAP[pi].upper())
+                jerar = "CONSEJERIA DE %s > SECRETARIA GENERAL > %s" % (consj, uo)
+            descr = uo
 
             # Tipo de puesto y funciones (determina trab/hor en el parseador).
-            ca33 = (e in (2, 3) and rng.random() < 0.18)
-            tipo = "CA033" if ca33 else "CA032"
-            nombre = "Auxiliar de Atención e Información" if ca33 else "Auxiliar"
-            funcs = ("FCA033 Función FCA033   IRC000   INFORMACIÓN, REGISTRO Y COMPULSAS"
-                     if ca33 else "FCA032   Función FCA032")
-            if e == 6 or rng.random() < 0.02:
-                funcs += "   643000   HORARIO ESPECIAL"
-            if (not sscc) and rng.random() < 0.03:
-                descr = "RESIDENCIA Y CENTRO DE DÍA DE %s" % (
-                    rng.choice(MUNICIPIOS[pi]).upper())
+            ca33 = (e in (2, 3) and rng.random() < 0.2)
+            nombre = "Auxiliar de Atención e Información" if ca33 else (
+                "Auxiliar Tipo 1" if rng.random() < 0.2 else "Auxiliar")
+            req = ("Función FCA033" if ca33 else
+                   "Función FCA034" if nombre.endswith("1") else "Función FCA032")
+            if rng.random() < 0.08:
+                req += " horario especial"
 
             # Municipio: capital más frecuentemente (como en el catálogo real).
             mun = (PROVS_CAP[pi] if rng.random() < 0.55
                    else rng.choice(MUNICIPIOS[pi]))
-            loc = mun
 
-            cod = rng.randrange(10000, 99999)
-            while cod in codigos:
-                cod = rng.randrange(10000, 99999)
-            codigos.add(cod)
+            cod = "1%07d" % rng.randrange(0, 9999999)
+            pagina = rng.randrange(10, 80)
+            esp = ESP_TXT[e]
 
             rows.append([
-                "CONSEJERIA DE " + consj, ua1, ua2, "", "", descr, cod, nombre,
-                tipo, "DG001", "CO", "15", "C2", COMP[e], "A1", "", "", "", "R",
-                PROVS[pi], mun, loc, funcs, "", "",
+                cod, nombre, "C2", "15", esp, "CO", adm, cuerpo,
+                mun, INE[pi], req, req, "0001%04d" % rng.randrange(0, 9999),
+                uo, jerar, pagina,
             ])
 
     rng.shuffle(rows)
-    with open(wpath("Relación posibles puestos.csv"), "w", encoding="cp1252",
+    with open(wpath("Relación posibles puestos.csv"), "w", encoding="cp850",
               newline="") as f:
         w = csv.writer(f, delimiter=";")
-        w.writerow(["Consejería", "Unidad Administrativa 1", "Unidad Administrativa 2",
-                    "Unidad Administrativa 3", "Unidad Administrativa 4",
-                    "Descr. Organo de Dependencia", "Puesto", "Nombre del Puesto",
-                    "Puesto Tipo", "Cuerpo Puesto", "Forma Provisión", "Nivel",
-                    "Grupo/Subgrupo", "Complemento Específico", "Tipo Administración",
-                    "Forma de Ocupación", "Cuerpo/Conv. del ocupante",
-                    "Especialidad/Categoría del Ocupante", "Estado del Puesto",
-                    "Provincia", "Municipio", "Localidad", "Funciones",
-                    "Experiencia Profesional", "Prom. Interna"])
+        w.writerow(CABECERA_PUESTOS)
         w.writerows(rows)
-    return rows
-
-
-def write_hist2025(rng):
-    """2025.csv sintético: 380 filas con conteos exactos por provincia/nivel
-    y reparto SSCC/territorial."""
-    rows = []
-    for pi, (e06, e04, e03, e02, n_sscc, n_terr) in enumerate(HIST2025):
-        niveles = [6] * e06 + [4] * e04 + [3] * e03 + [2] * e02
-        rng.shuffle(niveles)
-        for k, e in enumerate(niveles):
-            sscc = k < n_sscc
-            dep = "SSCC" if sscc else "TERRITORIAL"
-            cen = ("SERVICIOS CENTRALES · " + rng.choice(DIRECCIONES_GENERALES)
-                   if sscc else
-                   "SERVICIO TERRITORIAL DE %s" % rng.choice(CONSEJERIAS).split(",")[0].title())
-            rows.append({
-                "ESP": COMP[e], "DEP": dep, "PROV": PROVS[pi],
-                "LOC": PROVS_CAP[pi], "CENTRO": cen, "SSCC": sscc,
-            })
-    rng.shuffle(rows)
-
-    with open(wpath("2025.csv"), "w", encoding="cp1252", newline="") as f:
-        w = csv.writer(f, delimiter=";")
-        w.writerow(["PUESTO", "DENOMINACION", "GR", "NV", "ESP", "CUERPO_PTO",
-                    "TIPO_ADMON", "DEP. GEOGRAFICA", "PROVINCIA", "LOCALIDAD",
-                    "CONSEJERIA", "NIVEL2_RPT", "CENTRO", "UND_ORG_DIRECTA",
-                    "GRADO_ESTUDIOS", "TITULACION", "ESPECIALIDAD", "FUNCIONES",
-                    "MERITOS_ESP", "NOMBRE Y APELLIDOS", "COD", "Nº Orden"])
-        for i, r in enumerate(rows, start=1):
-            w.writerow([
-                rng.randrange(10000, 99999), "Auxiliar", "C2", "15", r["ESP"],
-                "DG001", "A1", r["DEP"], r["PROV"], r["LOC"],
-                rng.choice(CONSEJERIAS).title(), "", r["CENTRO"],
-                r["CENTRO"], "", "", "",
-                "FCA032   Función FCA032", "",
-                "ADJUDICATARIO/A DEMO %03d" % i, rng.randrange(10000, 99999), i,
-            ])
     return rows
 
 
@@ -250,14 +199,14 @@ def main():
 
     a = write_aprobados(rng)
     p = write_puestos(rng)
-    h = write_hist2025(rng)
 
     print("== DATOS SINTÉTICOS GENERADOS en %s/ ==" % OUT_DIR)
     print("Aprobados : %d (Turno M: %d)" % (len(a), len(M_POS)))
-    print("Puestos   : %d (E06: %d)" % (
-        len(p), sum(1 for r in p if r[13] == "E06")))
-    print("Histórico : %d plazas" % len(h))
-    assert len(a) == 362 and len(p) == 1636 and len(h) == 380
+    print("Puestos   : %d (E06: %d, A5: %d)" % (
+        len(p),
+        sum(1 for r in p if r[4] == "E06"),
+        sum(1 for r in p if r[6] == "A5")))
+    assert len(a) == 362 and len(p) == 362
     print("Sin datos personales: nombres ficticios (DEMO nnn / OPOSITOR/A).")
 
 

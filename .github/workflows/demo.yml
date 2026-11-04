@@ -34,7 +34,7 @@ jobs:
           python generar_datos_demo.py
           python generar_web.py --demo
 
-      - name: Pruebas del motor (23)
+      - name: Pruebas del motor (22)
         run: node test_nucleo.js
 
       - name: Pruebas headless de la interfaz (9)
